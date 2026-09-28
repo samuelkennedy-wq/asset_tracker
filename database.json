@@ -1,0 +1,694 @@
+{
+  "roles": [
+    {
+      "id": "module_a_engineer",
+      "name": "IT Field Engineer",
+      "code": "IT_ENG",
+      "description": "Field engineer responsible for creating CPU movement requests, mapping assets, and managing inventory.",
+      "department": "IT Field Services",
+      "badge_color": "blue",
+      "is_system_default": true,
+      "permissions": {
+        "can_create_movement_tickets": true,
+        "can_edit_tickets": true,
+        "can_approve_tickets": false,
+        "can_reject_tickets": false,
+        "can_gate_scan": false,
+        "can_view_floor_map": true,
+        "can_view_asset_directory": true,
+        "can_export_reports": false,
+        "can_access_server_terminal": false,
+        "can_manage_roles": false
+      }
+    },
+    {
+      "id": "module_b_manager",
+      "name": "IT Approval Manager",
+      "code": "MGR_APP",
+      "description": "Executive IT manager with full authority to approve/reject movement passes, issue security clearances, and manage user roles.",
+      "department": "IT Operations & Governance",
+      "badge_color": "amber",
+      "is_system_default": true,
+      "permissions": {
+        "can_create_movement_tickets": true,
+        "can_edit_tickets": true,
+        "can_approve_tickets": true,
+        "can_reject_tickets": true,
+        "can_gate_scan": true,
+        "can_view_floor_map": true,
+        "can_view_asset_directory": true,
+        "can_export_reports": true,
+        "can_access_server_terminal": true,
+        "can_manage_roles": true
+      }
+    },
+    {
+      "id": "module_c_security",
+      "name": "Platina Security Officer",
+      "code": "PLATINA_SEC",
+      "description": "Platina corporate physical security guard authorized to perform gate barcode scans, verify clearance passes, and enforce exit protocols.",
+      "department": "Platina Corporate Physical Security",
+      "badge_color": "indigo",
+      "is_system_default": true,
+      "permissions": {
+        "can_create_movement_tickets": false,
+        "can_edit_tickets": false,
+        "can_approve_tickets": false,
+        "can_reject_tickets": false,
+        "can_gate_scan": true,
+        "can_view_floor_map": false,
+        "can_view_asset_directory": true,
+        "can_export_reports": true,
+        "can_access_server_terminal": true,
+        "can_manage_roles": false
+      }
+    },
+    {
+      "id": "role_auditor",
+      "name": "IT Compliance Auditor",
+      "code": "IT_AUDIT",
+      "description": "Read-only compliance auditor with access to inventory master reports, gate scan logs, and email queue trails.",
+      "department": "Internal Audit",
+      "badge_color": "purple",
+      "is_system_default": true,
+      "permissions": {
+        "can_create_movement_tickets": false,
+        "can_edit_tickets": false,
+        "can_approve_tickets": false,
+        "can_reject_tickets": false,
+        "can_gate_scan": false,
+        "can_view_floor_map": true,
+        "can_view_asset_directory": true,
+        "can_export_reports": true,
+        "can_access_server_terminal": true,
+        "can_manage_roles": false
+      }
+    },
+    {
+      "id": "role_sys_admin",
+      "name": "System Administrator",
+      "code": "SYS_ADM",
+      "description": "Super-user with unrestricted root control over asset management, security protocols, server terminals, and user role creation.",
+      "department": "IT Infrastructure",
+      "badge_color": "emerald",
+      "is_system_default": true,
+      "permissions": {
+        "can_create_movement_tickets": true,
+        "can_edit_tickets": true,
+        "can_approve_tickets": true,
+        "can_reject_tickets": true,
+        "can_gate_scan": true,
+        "can_view_floor_map": true,
+        "can_view_asset_directory": true,
+        "can_export_reports": true,
+        "can_access_server_terminal": true,
+        "can_manage_roles": true
+      }
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "name": "Dominic Manoharan",
+      "email": "dominic.manoharan@247.ai",
+      "emp_id": "010128793",
+      "role_id": "module_b_manager",
+      "department": "IT Governance",
+      "active": true,
+      "created_at": "2026-08-16T13:01:03.570Z"
+    },
+    {
+      "id": 2,
+      "name": "Samuel Kennedy",
+      "email": "engineer@247.ai",
+      "emp_id": "01099318",
+      "role_id": "module_a_engineer",
+      "department": "IT Field Services",
+      "active": true,
+      "created_at": "2026-08-21T13:01:03.570Z"
+    },
+    {
+      "id": 3,
+      "name": "Platina Security Officer",
+      "email": "platina.security@247.ai",
+      "emp_id": "01088412",
+      "role_id": "module_c_security",
+      "department": "Facilities Security",
+      "active": true,
+      "created_at": "2026-08-26T13:01:03.570Z"
+    },
+    {
+      "id": 4,
+      "name": "Basavaraj SK",
+      "email": "basavaraj.sk@247.ai",
+      "emp_id": "01099318",
+      "role_id": "module_a_engineer",
+      "department": "IT Support",
+      "active": true,
+      "created_at": "2026-08-31T13:01:03.570Z"
+    },
+    {
+      "id": 5,
+      "name": "Sarah Connor",
+      "email": "sarah.auditor@247.ai",
+      "emp_id": "01077221",
+      "role_id": "role_auditor",
+      "department": "Internal Audit",
+      "active": true,
+      "created_at": "2026-09-05T13:01:03.570Z"
+    },
+    {
+      "id": 6,
+      "name": "Jyothi Potula",
+      "email": "jyothi.potula@247.ai",
+      "emp_id": "jyothi.potula",
+      "role_id": "module_b_manager",
+      "department": "IT Asset Governance Board",
+      "active": true,
+      "created_at": "2026-09-18T08:00:00.000Z"
+    }
+  ],
+  "assets": [
+    {
+      "id": 1,
+      "barcode": "CPU90001",
+      "model": "Dell OptiPlex 7090",
+      "serial_number": "S/N-78F8A2",
+      "current_location": "FLOOR_2",
+      "status": "DEPLOYED",
+      "last_floor_ticket_no": "TKT-0007",
+      "last_floor_entered_at": "2026-09-21T15:37:59.277Z",
+      "last_floor": "FLOOR_2",
+      "last_port_number": "P-204"
+    },
+    {
+      "id": 2,
+      "barcode": "CPU90002",
+      "model": "HP EliteDesk 800 G6",
+      "serial_number": "S/N-H92G4K",
+      "current_location": "TRANSIT_GATE",
+      "status": "AVAILABLE"
+    },
+    {
+      "id": 3,
+      "barcode": "CPU90003",
+      "model": "Lenovo ThinkCentre M90q",
+      "serial_number": "S/N-L34D9W",
+      "current_location": "FLOOR_3",
+      "status": "DEPLOYED"
+    },
+    {
+      "id": 4,
+      "barcode": "CPU90004",
+      "model": "Dell OptiPlex 5080",
+      "serial_number": "S/N-92C2X4",
+      "current_location": "STOCK",
+      "status": "AVAILABLE"
+    },
+    {
+      "id": 5,
+      "barcode": "CPU90005",
+      "model": "HP ProDesk 600 G5",
+      "serial_number": "S/N-H38S9L",
+      "current_location": "FLOOR_1",
+      "status": "DEPLOYED"
+    },
+    {
+      "id": 6,
+      "barcode": "CPU90006",
+      "model": "Dell OptiPlex 7090 Plus",
+      "serial_number": "S/N-DL77F5",
+      "current_location": "FLOOR_7",
+      "status": "DEPLOYED"
+    },
+    {
+      "id": 7,
+      "barcode": "CPU90007",
+      "model": "Lenovo ThinkCentre M90q Gen2",
+      "serial_number": "S/N-LN77F4",
+      "current_location": "FLOOR_7",
+      "status": "DEPLOYED"
+    },
+    {
+      "id": 8,
+      "asset_type": "CPU",
+      "barcode": "CPU-SR100101928",
+      "model": "Enterprise Desktop CPU",
+      "serial_number": "S/N-SR100101928",
+      "current_location": "IT ROOM",
+      "status": "AVAILABLE"
+    },
+    {
+      "id": 9,
+      "asset_type": "CPU",
+      "barcode": "CPU-SR100101928",
+      "model": "Enterprise Desktop CPU",
+      "serial_number": "S/N-SR100101928",
+      "current_location": "IT ROOM",
+      "status": "AVAILABLE"
+    }
+  ],
+  "movement_tickets": [
+    {
+      "id": 1,
+      "ticket_no": "TKT-0001",
+      "asset_barcode": "CPU90002",
+      "asset_serial_number": "S/N-H92G4K",
+      "origin_location": "IT_ROOM",
+      "destination_floor": "FLOOR_3",
+      "target_room": "Finance Desk 304",
+      "requestor_name": "Samuel Kennedy",
+      "requested_by": "Samuel Kennedy",
+      "engineer_name": "Basavaraj SK",
+      "engineer_emp_id": "01099318",
+      "reason": "Workstation upgrade for Finance team",
+      "status": "APPROVED",
+      "created_at": "2026-09-15T12:01:03.570Z",
+      "clearance_id": "TKT-0001",
+      "approved_at": "2026-09-15T16:27:25.980Z",
+      "gateway_clearance_status": "CLEARED",
+      "gateway_cleared_timestamp": "2026-09-15T16:29:39.204Z",
+      "gateway_scanned_by": "Gate Officer",
+      "gateway_blocked_reason": ""
+    },
+    {
+      "id": 2,
+      "ticket_no": "TKT-0002",
+      "asset_barcode": "CPU90003",
+      "asset_serial_number": "S/N-L34D9W",
+      "origin_location": "IT_ROOM",
+      "destination_floor": "FLOOR_3",
+      "target_room": "Executive Suite 310",
+      "requestor_name": "Alice Chen",
+      "requested_by": "Alice Chen",
+      "engineer_name": "T Murugesh",
+      "engineer_emp_id": "010125496",
+      "reason": "New system setup for executive suite",
+      "status": "APPROVED",
+      "clearance_id": "TKT-0002",
+      "approved_by_name": "D. Manoharan",
+      "approved_by_id": "010128793",
+      "created_at": "2026-09-15T11:01:03.570Z",
+      "approved_at": "2026-09-15T11:02:43.570Z"
+    },
+    {
+      "id": 3,
+      "ticket_no": "TKT-0003",
+      "asset_barcode": "CPU90006",
+      "asset_serial_number": "S/N-DL77F5",
+      "origin_location": "IT_ROOM",
+      "destination_floor": "FLOOR_7",
+      "target_room": "Training Room (444)",
+      "requestor_name": "Officer John Doe",
+      "requested_by": "Officer John Doe",
+      "engineer_name": "Mahantesh",
+      "engineer_emp_id": "01005651",
+      "reason": "7th floor office expansion",
+      "status": "APPROVED",
+      "clearance_id": "TKT-0003",
+      "approved_by_name": "D. Manoharan",
+      "approved_by_id": "010128793",
+      "created_at": "2026-09-15T09:01:03.570Z",
+      "approved_at": "2026-09-15T09:02:43.570Z"
+    },
+    {
+      "id": 4,
+      "ticket_no": "TKT-0004",
+      "asset_barcode": "CPU90007",
+      "asset_serial_number": "S/N-LN77F4",
+      "origin_location": "IT_ROOM",
+      "destination_floor": "FLOOR_7",
+      "target_room": "Cluster 3",
+      "requestor_name": "Samuel Kennedy",
+      "requested_by": "Samuel Kennedy",
+      "engineer_name": "Basavaraj SK",
+      "engineer_emp_id": "01099318",
+      "reason": "Development lab replacement",
+      "status": "APPROVED",
+      "clearance_id": "TKT-0004",
+      "approved_by_name": "D. Manoharan",
+      "approved_by_id": "010128793",
+      "gateway_clearance_status": "BLOCKED",
+      "gateway_blocked_reason": "SECURITY ALERT: SERIAL NUMBERS MISMATCH AT GATE! Registered IT Room S/N: 'S/N-LN77F4' vs Scanned Physical CPU S/N: 'CPU-88912'. Gate Officer blocked entry/exit.",
+      "gateway_blocked_timestamp": "2026-09-15T12:31:03.570Z",
+      "gateway_scanned_by": "Gate Security Officer-01",
+      "scanned_physical_serial": "CPU-88912",
+      "created_at": "2026-09-15T09:01:03.570Z",
+      "approved_at": "2026-09-15T09:02:43.570Z"
+    },
+    {
+      "id": 5,
+      "ticket_no": "IT0129865",
+      "requestor_name": "SAMUEL KENNEDY",
+      "requestor_emp_id": "EMP-01099234",
+      "engineer_name": "BASAVARAJ",
+      "engineer_emp_id": "010128675",
+      "asset_type": "CPU",
+      "asset_serial_number": "S/N-SR100101928",
+      "asset_barcode": "CPU-SR100101928",
+      "origin_location": "IT ROOM",
+      "destination_floor": "FLOOR 4",
+      "target_room": "Floor Workspace (Floor 4)",
+      "reason": "IT Infrastructure upgrade / workstation deployment",
+      "status": "APPROVED",
+      "created_at": "2026-09-15T16:21:10.668Z",
+      "gateway_clearance_status": "CLEARED",
+      "gateway_blocked_reason": "",
+      "gateway_blocked_timestamp": "2026-09-15T16:26:55.625Z",
+      "gateway_scanned_by": "Platina Security Officer",
+      "scanned_physical_serial": "SR100101928",
+      "clearance_id": "IT0129865",
+      "approved_at": "2026-09-15T16:27:29.463Z",
+      "gateway_cleared_timestamp": "2026-09-15T16:27:53.152Z"
+    },
+    {
+      "id": 6,
+      "ticket_no": "TKT-2026-001",
+      "requestor_name": "SAMUEL KENNEDY",
+      "requestor_emp_id": "010128793",
+      "engineer_name": "BASAVARAJ",
+      "engineer_emp_id": "010128793",
+      "asset_type": "CPU",
+      "asset_serial_number": "S/N-SR100101928",
+      "asset_barcode": "CPU-SR100101928",
+      "origin_location": "IT ROOM",
+      "destination_floor": "FLOOR 3",
+      "target_room": "Floor Workspace (Floor 3)",
+      "reason": "TEST 1234 4TH FLOOR",
+      "status": "APPROVED",
+      "created_at": "2026-09-15T16:22:38.025Z",
+      "clearance_id": "TKT-2026-001",
+      "approved_at": "2026-09-15T16:23:55.786Z"
+    },
+    {
+      "id": 7,
+      "ticket_no": "TKT-0007",
+      "requestor_name": "SAMUEL KENNEDY",
+      "requestor_emp_id": "EMP-9901",
+      "engineer_name": "SAMUEL KENNEDY",
+      "engineer_emp_id": "",
+      "asset_type": "CPU",
+      "asset_serial_number": "S/N-78F8A2",
+      "asset_barcode": "CPU90001",
+      "origin_location": "STOCK",
+      "destination_floor": "FLOOR_2",
+      "target_room": "Floor Workspace (FLOOR_2)",
+      "port_number": "P-204",
+      "reason": "Testing movement flow",
+      "status": "APPROVED",
+      "movement_type": "DEPLOY_TO_FLOOR",
+      "previous_floor_ticket_no": "",
+      "previous_floor_entered_at": "",
+      "previous_floor": "",
+      "previous_port_number": "",
+      "created_at": "2026-09-21T15:37:34.394Z",
+      "rejection_reason": "Floor allocation policy non-compliance / security hold",
+      "approved_by_name": "Jyothi Potula",
+      "approved_by_id": "010045231",
+      "approved_at": "2026-09-21T15:37:59.277Z",
+      "clearance_id": "TKT-0007",
+      "gateway_clearance_status": "CLEARED",
+      "gateway_cleared_timestamp": "2026-09-21T15:38:17.028Z",
+      "gateway_scanned_by": "Platina Officer John",
+      "gateway_blocked_reason": ""
+    }
+  ],
+  "scan_logs": [
+    {
+      "id": 1,
+      "barcode": "CPU90003",
+      "scanned_by": "Officer Guard 1",
+      "from_location": "STOCK",
+      "to_location": "IT_ROOM",
+      "scan_timestamp": "2026-09-15T10:01:03.570Z",
+      "is_valid": 1
+    },
+    {
+      "id": 2,
+      "barcode": "CPU90003",
+      "scanned_by": "Officer Guard 1",
+      "from_location": "IT_ROOM",
+      "to_location": "FLOOR_3",
+      "scan_timestamp": "2026-09-15T10:06:03.570Z",
+      "is_valid": 1
+    },
+    {
+      "id": 3,
+      "barcode": "IT0129865",
+      "scanned_by": "Platina Security Officer",
+      "from_location": "IT ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-09-15T16:24:25.180Z",
+      "is_valid": 0,
+      "reason": "HOLD AT GATEWAY — AWAITING MANAGER APPROVAL! Ticket IT0129865 for CPU S/N 'S/N-SR100101928' is pending IT Manager authorization. CPU NOT ALLOWED THROUGH GATEWAY!"
+    },
+    {
+      "id": 4,
+      "barcode": "IT0129865",
+      "scanned_by": "Platina Security Officer",
+      "from_location": "IT ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-09-15T16:26:55.625Z",
+      "is_valid": 0,
+      "reason": "HOLD AT GATEWAY — AWAITING MANAGER APPROVAL! Ticket IT0129865 for CPU S/N 'S/N-SR100101928' is pending IT Manager authorization. CPU NOT ALLOWED THROUGH GATEWAY!"
+    },
+    {
+      "id": 5,
+      "barcode": "IT0129865",
+      "scanned_by": "Platina Security Officer",
+      "from_location": "IT ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-09-15T16:27:53.152Z",
+      "is_valid": 1,
+      "reason": "OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Manager Approved Ticket IT0129865 permits serial 'SR100101928'! Authorized to exit IT Room for destination FLOOR 4. Clearance Pass ID: CLR-67665."
+    },
+    {
+      "id": 6,
+      "barcode": "01099318",
+      "scanned_by": "Gate Officer",
+      "from_location": "IT_ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-09-15T16:29:33.072Z",
+      "is_valid": 1,
+      "reason": "OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Manager Approved Ticket TKT-0001 permits movement for serial 'S/N-H92G4K'! Authorized to exit IT Room for destination FLOOR_3. Clearance Pass ID: CLR-11437 [Engineer: Basavaraj SK (Emp ID: 01099318)]."
+    },
+    {
+      "id": 7,
+      "barcode": "CPU90002",
+      "scanned_by": "Gate Officer",
+      "from_location": "IT_ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-09-15T16:29:39.204Z",
+      "is_valid": 1,
+      "reason": "OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Manager Approved Ticket TKT-0001 permits movement for serial 'S/N-H92G4K'! Authorized to exit IT Room for destination FLOOR_3. Clearance Pass ID: CLR-11437 [Engineer: Basavaraj SK (Emp ID: 01099318)]."
+    },
+    {
+      "id": 8,
+      "barcode": "TKT-0007",
+      "serial_number": "TKT-0007",
+      "ticket_id": 7,
+      "ticket_no": "TKT-0007",
+      "scanned_by": "Platina Officer John",
+      "from_location": "GATE_TRANSIT",
+      "to_location": "FLOOR_2",
+      "scan_timestamp": "2026-09-21T15:38:17.028Z",
+      "is_valid": 1,
+      "reason": "INBOUND ENTRY PERMITTED — GREEN LIGHT ✓ Approved Ticket TKT-0007 authorizes movement for serial 'S/N-78F8A2'! CPU successfully received inside FLOOR_2. Movement Identification: Ticket [TKT-0007].",
+      "clearance_id": "TKT-0007"
+    }
+  ],
+  "email_queue": [
+    {
+      "id": 1,
+      "recipient": "amg@247.ai",
+      "subject": "CPU90003 Authorized Movement Logged",
+      "body": "INFO: CPU90003 successfully scanned from IT_ROOM to FLOOR_3. Scanned by Officer Guard 1.",
+      "status": "SENT",
+      "created_at": "2026-09-15T10:06:03.570Z",
+      "sent_at": "2026-09-15T10:06:13.570Z"
+    }
+  ],
+  "system_logs": [
+    {
+      "id": 1,
+      "timestamp": "2026-09-15T13:01:03.570Z",
+      "level": "INFO",
+      "message": "System initiated. Asset Chain of Custody tracking active."
+    },
+    {
+      "id": 2,
+      "timestamp": "2026-09-15T13:01:03.573Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 3,
+      "timestamp": "2026-09-15T16:21:10.668Z",
+      "level": "INFO",
+      "message": "Auto-registered CPU Asset CPU-SR100101928 (S/N: S/N-SR100101928) in IT Stock Room inventory."
+    },
+    {
+      "id": 4,
+      "timestamp": "2026-09-15T16:21:10.668Z",
+      "level": "INFO",
+      "message": "Raised Ticket IT0129865 for 1 CPU S/N(s) [S/N-SR100101928] to Floor 4 under single ticket."
+    },
+    {
+      "id": 5,
+      "timestamp": "2026-09-15T16:22:38.025Z",
+      "level": "INFO",
+      "message": "Auto-registered CPU Asset CPU-SR100101928 (S/N: S/N-SR100101928) in IT Stock Room inventory."
+    },
+    {
+      "id": 6,
+      "timestamp": "2026-09-15T16:22:38.025Z",
+      "level": "INFO",
+      "message": "Raised Ticket TKT-2026-001 for 1 CPU S/N(s) [S/N-SR100101928] to Floor 3 under single ticket."
+    },
+    {
+      "id": 7,
+      "timestamp": "2026-09-15T16:23:55.786Z",
+      "level": "SUCCESS",
+      "message": "EDITED Ticket #6 (TKT-2026-001) details updated by Manager."
+    },
+    {
+      "id": 8,
+      "timestamp": "2026-09-15T16:24:25.180Z",
+      "level": "WARN",
+      "message": "Gate Scan [OUTBOUND_EXIT - HOLD]: IT0129865 (Physical: SR100101928) by Platina Security Officer. HOLD AT GATEWAY — AWAITING MANAGER APPROVAL! Ticket IT0129865 for CPU S/N 'S/N-SR100101928' is pending IT Manager authorization. CPU NOT ALLOWED THROUGH GATEWAY!"
+    },
+    {
+      "id": 9,
+      "timestamp": "2026-09-15T16:26:55.625Z",
+      "level": "WARN",
+      "message": "Gate Scan [OUTBOUND_EXIT - HOLD]: IT0129865 (Physical: SR100101928) by Platina Security Officer. HOLD AT GATEWAY — AWAITING MANAGER APPROVAL! Ticket IT0129865 for CPU S/N 'S/N-SR100101928' is pending IT Manager authorization. CPU NOT ALLOWED THROUGH GATEWAY!"
+    },
+    {
+      "id": 10,
+      "timestamp": "2026-09-15T16:27:25.980Z",
+      "level": "SUCCESS",
+      "message": "EDITED Ticket #1 (TKT-0001) details updated by Manager."
+    },
+    {
+      "id": 11,
+      "timestamp": "2026-09-15T16:27:29.463Z",
+      "level": "SUCCESS",
+      "message": "EDITED Ticket #5 (IT0129865) details updated by Manager."
+    },
+    {
+      "id": 12,
+      "timestamp": "2026-09-15T16:27:53.153Z",
+      "level": "SUCCESS",
+      "message": "Gate Scan [OUTBOUND_EXIT - CLEARED]: IT0129865 (Physical: SR100101928) by Platina Security Officer. OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Manager Approved Ticket IT0129865 permits serial 'SR100101928'! Authorized to exit IT Room for destination FLOOR 4. Clearance Pass ID: CLR-67665."
+    },
+    {
+      "id": 13,
+      "timestamp": "2026-09-15T16:29:29.375Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 14,
+      "timestamp": "2026-09-15T16:29:33.072Z",
+      "level": "SUCCESS",
+      "message": "Gate Scan [OUTBOUND_EXIT - CLEARED]: 01099318 (Physical: N/A) by Gate Officer. OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Manager Approved Ticket TKT-0001 permits movement for serial 'S/N-H92G4K'! Authorized to exit IT Room for destination FLOOR_3. Clearance Pass ID: CLR-11437 [Engineer: Basavaraj SK (Emp ID: 01099318)]."
+    },
+    {
+      "id": 15,
+      "timestamp": "2026-09-15T16:29:39.204Z",
+      "level": "SUCCESS",
+      "message": "Gate Scan [OUTBOUND_EXIT - CLEARED]: 01099318 (Physical: S/N-H92G4K) by Gate Officer. OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Manager Approved Ticket TKT-0001 permits movement for serial 'S/N-H92G4K'! Authorized to exit IT Room for destination FLOOR_3. Clearance Pass ID: CLR-11437 [Engineer: Basavaraj SK (Emp ID: 01099318)]."
+    },
+    {
+      "id": 16,
+      "timestamp": "2026-09-18T15:13:46.035Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 17,
+      "timestamp": "2026-09-18T15:35:31.656Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 18,
+      "timestamp": "2026-09-21T10:42:29.199Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 19,
+      "timestamp": "2026-09-21T10:51:51.059Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 20,
+      "timestamp": "2026-09-21T10:52:03.385Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 21,
+      "timestamp": "2026-09-21T10:58:46.369Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 22,
+      "timestamp": "2026-09-21T10:58:53.588Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 23,
+      "timestamp": "2026-09-21T11:36:57.614Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 24,
+      "timestamp": "2026-09-21T11:37:35.791Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 25,
+      "timestamp": "2026-09-21T15:37:34.394Z",
+      "level": "INFO",
+      "message": "Raised Ticket TKT-0007 [DEPLOY_TO_FLOOR ] for 1 S/N(s) [S/N-78F8A2] to FLOOR_2."
+    },
+    {
+      "id": 26,
+      "timestamp": "2026-09-21T15:37:36.612Z",
+      "level": "WARN",
+      "message": "REJECTED Ticket TKT-0007 by Manager Jyothi Potula. Reason: Floor allocation policy non-compliance / security hold"
+    },
+    {
+      "id": 27,
+      "timestamp": "2026-09-21T15:37:49.758Z",
+      "level": "WARN",
+      "message": "REJECTED Ticket TKT-0007 by Manager Jyothi Potula. Reason: Floor allocation policy non-compliance / security hold"
+    },
+    {
+      "id": 28,
+      "timestamp": "2026-09-21T15:37:56.186Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 29,
+      "timestamp": "2026-09-21T15:37:59.277Z",
+      "level": "SUCCESS",
+      "message": "APPROVED Ticket TKT-0007 by Manager Jyothi Potula (010045231). In/Out Movement Identification (Ticket Number): TKT-0007"
+    },
+    {
+      "id": 30,
+      "timestamp": "2026-09-21T15:38:17.028Z",
+      "level": "SUCCESS",
+      "message": "Gate Scan [INBOUND_ENTRY - CLEARED]: TKT-0007 (Physical: N/A) by Platina Officer John. INBOUND ENTRY PERMITTED — GREEN LIGHT ✓ Approved Ticket TKT-0007 authorizes movement for serial 'S/N-78F8A2'! CPU successfully received inside FLOOR_2. Movement Identification: Ticket [TKT-0007]."
+    }
+  ],
+  "is_internet_online": true
+}

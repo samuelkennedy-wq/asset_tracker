@@ -1,0 +1,10 @@
+{
+  "name": "[24]7.ai Asset Trackers",
+  "description": "IT Asset Movement & Tracking System with Approval Teams (including Jyothi Potula & D. Manoharan), Engineer Movement Desk, Platina Security Gateway, Port & Floor Allocation, Return to Stock/Scrap Tracking, and Deduplicated Reporting.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
