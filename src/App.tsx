@@ -1,3 +1,6 @@
+import InstallPwaPrompt from './components/InstallPwaPrompt';
+import CompanyLogo from './components/CompanyLogo';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -19,7 +22,7 @@ import {
   FileSpreadsheet,
   LogOut,
   UserCheck,
-  Camera,
+  Camera, Truck, Package,
   Users,
   UserPlus
 } from 'lucide-react';
@@ -34,17 +37,19 @@ import PerformanceBench from './components/PerformanceBench';
 import ServerTerminal from './components/ServerTerminal';
 import AdminReportingView from './components/AdminReportingView';
 import LoginPage from './components/LoginPage';
+import ChatbotAssistant from './components/ChatbotAssistant';
 import HardwareBarcodeScanner from './components/HardwareBarcodeScanner';
 import { validateAndCleanSerial } from './utils/serialValidator';
 
 import { Asset, MovementTicket, EmailQueue, SystemLog, DashboardStats, GateScanLog } from './types';
 
 import UserRolesManager from './components/UserRolesManager';
+import LiveAssetJourneyTracker from './components/LiveAssetJourneyTracker';
 
 type PrimaryModule = 'module_a_engineer' | 'module_b_manager' | 'module_c_security';
-type ModuleASubTab = 'tickets' | 'approvals' | 'gate_security' | 'floor_map' | 'asset_directory';
-type ModuleBSubTab = 'approvals' | 'master_export' | 'roles_management';
-type ModuleCSubTab = 'gate_scanner' | 'mail_system';
+type ModuleASubTab = 'tickets' | 'approvals' | 'gate_security' | 'floor_map' | 'asset_directory' | 'live_tracker';
+type ModuleBSubTab = 'approvals' | 'master_export' | 'roles_management' | 'live_tracker';
+type ModuleCSubTab = 'gate_scanner' | 'mail_system' | 'live_tracker';
 type AdminSubTab = 'email' | 'terminal' | 'benchmark';
 
 export default function App() {
@@ -242,9 +247,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           
           {/* Brand Logo & Title */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm font-mono shadow-sm shrink-0">
-              24/7
+          <div className="flex items-center space-x-3 shrink-0 min-w-0">
+            <div className="shrink-0 flex items-center justify-center aspect-square" style={{ aspectRatio: "1 / 1" }}>
+              <CompanyLogo size="lg" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -278,6 +283,18 @@ export default function App() {
                 <span>Web</span>
               </button>
               <button
+              onClick={() => {
+                if (activePrimaryModule === 'module_a_engineer') setModuleASubTab('live_tracker');
+                else if (activePrimaryModule === 'module_b_manager') setModuleBSubTab('live_tracker');
+                else setModuleCSubTab('live_tracker');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
+              title="Track live asset movement by scanning CPU serial"
+            >
+              <Truck className="w-3.5 h-3.5" />
+              <span>Live Asset Tracking</span>
+            </button>
+            <button
                 onClick={() => setScreenMode('mobile')}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
                   screenMode === 'mobile'
@@ -479,6 +496,18 @@ export default function App() {
 
               <motion.button
                 whileTap={{ scale: 0.96 }}
+                onClick={() => setModuleASubTab('live_tracker')}
+                className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
+                  moduleASubTab === 'live_tracker'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Truck className="w-3.5 h-3.5 text-amber-500" />
+                <span>Asset Movement Tracker</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
                 onClick={() => setModuleASubTab('asset_directory')}
                 className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
                   moduleASubTab === 'asset_directory'
@@ -521,18 +550,7 @@ export default function App() {
                 <span>Audit & Reports</span>
               </motion.button>
 
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setModuleBSubTab('roles_management')}
-                className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
-                  moduleBSubTab === 'roles_management'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>User Roles & Permissions</span>
-              </motion.button>
+              
             </div>
           )}
 
@@ -595,6 +613,7 @@ export default function App() {
                     <ApprovalManagerDesk
                       tickets={tickets}
                       assets={assets}
+                      scanLogs={scanLogs}
                       onRefresh={syncWithServer}
                       onNavigateToGateSecurity={userRole === 'module_b_manager' ? handleSelectBarcodeForScan : undefined}
                       isReadOnly={userRole !== 'module_b_manager'}
@@ -602,13 +621,15 @@ export default function App() {
                   )}
 
                   {moduleASubTab === 'gate_security' && (
-                    <ScannerGate
-                      assets={assets}
-                      tickets={tickets}
-                      scanLogs={scanLogs}
-                      onRefresh={syncWithServer}
-                      initialSelectedBarcode={selectedBarcodeForScan}
-                    />
+                    <ErrorBoundary fallbackTitle="Gate Security Scanner Error">
+                      <ScannerGate
+                        assets={assets || []}
+                        tickets={tickets || []}
+                        scanLogs={scanLogs || []}
+                        onRefresh={syncWithServer}
+                        initialSelectedBarcode={selectedBarcodeForScan}
+                      />
+                    </ErrorBoundary>
                   )}
 
                   {moduleASubTab === 'floor_map' && (
@@ -634,6 +655,14 @@ export default function App() {
                     />
                   )}
 
+                  {moduleASubTab === 'live_tracker' && (
+                    <LiveAssetJourneyTracker
+                      assets={assets}
+                      tickets={tickets}
+                      scanLogs={scanLogs}
+                      initialSearchSerial={selectedBarcodeForScan}
+                    />
+                  )}
                   {moduleASubTab === 'asset_directory' && (
                     <Dashboard
                       assets={assets}
@@ -653,6 +682,7 @@ export default function App() {
                     <ApprovalManagerDesk
                       tickets={tickets}
                       assets={assets}
+                      scanLogs={scanLogs}
                       onRefresh={syncWithServer}
                       onNavigateToGateSecurity={handleSelectBarcodeForScan}
                     />
@@ -667,6 +697,14 @@ export default function App() {
                     />
                   )}
 
+                  {moduleBSubTab === 'live_tracker' && (
+                    <LiveAssetJourneyTracker
+                      assets={assets}
+                      tickets={tickets}
+                      scanLogs={scanLogs}
+                      initialSearchSerial={selectedBarcodeForScan}
+                    />
+                  )}
                   {moduleBSubTab === 'roles_management' && (
                     <UserRolesManager
                       currentUserRole={userRole}
@@ -698,15 +736,25 @@ export default function App() {
               {activePrimaryModule === 'module_c_security' && (
                 <>
                   {moduleCSubTab === 'gate_scanner' && (
-                    <ScannerGate
+                    <ErrorBoundary fallbackTitle="Gate Security Scanner Error">
+                      <ScannerGate
+                        assets={assets || []}
+                        tickets={tickets || []}
+                        scanLogs={scanLogs || []}
+                        onRefresh={syncWithServer}
+                        initialSelectedBarcode={selectedBarcodeForScan}
+                      />
+                    </ErrorBoundary>
+                  )}
+
+                  {moduleCSubTab === 'live_tracker' && (
+                    <LiveAssetJourneyTracker
                       assets={assets}
                       tickets={tickets}
                       scanLogs={scanLogs}
-                      onRefresh={syncWithServer}
-                      initialSelectedBarcode={selectedBarcodeForScan}
+                      initialSearchSerial={selectedBarcodeForScan}
                     />
                   )}
-
                   {moduleCSubTab === 'mail_system' && (
                     <div className="space-y-4">
                       {/* Admin Sub-navigation */}
@@ -816,6 +864,11 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* AI Asset & Ticket Chatbot Assistant */}
+      <ChatbotAssistant />
+
+      {/* Android PWA Install Prompt Banner */}
+      <InstallPwaPrompt />
       {/* FOOTER */}
       <footer className="bg-[#050a15] border-t border-slate-800 py-4 text-center text-xs text-slate-500 font-mono shrink-0" id="main-footer">
         <div>[24]7.ai Asset Custody Control System • Standard Output Gateway</div>

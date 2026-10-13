@@ -1,0 +1,62 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>[24]7.ai Asset Tracker Technical Architecture</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+@page {
+    size: 8.5in 11.0in;
+    margin: 1.0in 1.0in 1.0in 1.0in;
+    mso-header-margin: .5in;
+    mso-footer-margin: .5in;
+}
+body {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1e293b;
+    background-color: #ffffff;
+}
+h1 { font-size: 18pt; font-weight: bold; }
+h2 { font-size: 14pt; font-weight: bold; }
+h3 { font-size: 12pt; font-weight: bold; }
+p { margin-bottom: 8pt; }
+table { border-collapse: collapse; width: 100%; margin: 12pt 0; }
+th, td { border: 1px solid #cbd5e1; padding: 6pt; font-size: 10pt; }
+th { background-color: #0f3b7a; color: #ffffff; }
+tr:nth-child(even) { background-color: #f8fafc; }
+pre { font-family: Consolas, Courier New, monospace; font-size: 9.5pt; background: #f1f5f9; padding: 8pt; border: 1px solid #cbd5e1; }
+</style>
+</head>
+<body>
+<h1 style="color:#0f3b7a; border-bottom: 2px solid #0f3b7a; padding-bottom: 6px; margin-top: 24px;">[24]7.ai Asset Tracker - Documentation Index</h1>
+
+The master Technical Architecture and System Engineering documentation for the <strong>[24]7.ai Asset Tracking &amp; Clearance Gateway System</strong> is maintained in:
+
+<li><strong>Primary Architecture Document:</strong> <code style="background-color:#f1f5f9; padding:2px 4px; font-family:Courier New, monospace; font-size:10pt; border-radius:3px;">/opt/asset-tracker-docs/TECHNICAL_ARCHITECTURE.md</code></li>
+<li><strong>Workspace Architecture Copy:</strong> <code style="background-color:#f1f5f9; padding:2px 4px; font-family:Courier New, monospace; font-size:10pt; border-radius:3px;">./TECHNICAL_ARCHITECTURE.md</code></li>
+
+<h3 style="color:#1e293b; margin-top: 16px;">Document Contents:</h3>
+1. Executive Summary &amp; Problem Space
+2. Global System Architecture Diagram
+3. Frontend Technology Stack &amp; Client Architecture (React 19, TypeScript, Tailwind v4, html5-qrcode, USB HID)
+4. Node.js Backend Integration &amp; API Services (Express.js, REST Controllers, Gate Verification)
+5. Reverse Proxy Architecture: Nginx with SSL/TLS (Port 80 to 443 Redirect, Security Headers, Upstream Proxy)
+6. End-to-End Data Flow &amp; Audit Compliance Matrix (ISO 27001 &amp; SOC 2 Type II Alignment)
+7. Storage Engine &amp; Mutex-Locked Atomic Persistence
+8. Host Service Management &amp; Systemd Daemon
+9. Performance Benchmarks &amp; Capacity Limits (&lt; 1.5ms Gate Scan Latency)
+10. Disaster Recovery Runbook (RTO &lt; 2 minutes)
+
+</body>
+</html>

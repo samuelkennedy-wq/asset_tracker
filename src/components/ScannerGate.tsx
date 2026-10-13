@@ -1,7 +1,8 @@
+import CompanyLogo from './CompanyLogo';
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Asset, MovementTicket, GateScanLog } from '../types';
-import { ScanBarcode, ShieldAlert, ShieldCheck, QrCode, Download, Volume2, AlertTriangle, RefreshCw, XCircle, CheckCircle2, ArrowRightLeft, ArrowRight, Shield, Layers, Zap, Clock, RotateCw, Building2, User, FileSpreadsheet } from 'lucide-react';
+import { ScanBarcode, ShieldAlert, ShieldCheck, QrCode, Download, Volume2, AlertTriangle, RefreshCw, XCircle, CheckCircle2, ArrowRightLeft, ArrowRight, Shield, Layers, Zap, Clock, RotateCw, Building2, User, FileSpreadsheet, Printer } from 'lucide-react';
 import HardwareBarcodeScanner from './HardwareBarcodeScanner';
 import BarcodeGraphic from './BarcodeGraphic';
 import { validateAndCleanSerial } from '../utils/serialValidator';
@@ -15,7 +16,7 @@ interface ScannerGateProps {
   initialSelectedBarcode?: string;
 }
 
-export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, initialSelectedBarcode }: ScannerGateProps) {
+export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], onRefresh, initialSelectedBarcode = "" }: ScannerGateProps) {
   // Terminal Mode: Standard Gateway Scan vs Backtrack Return to Stock Room
   const [terminalTab, setTerminalTab] = useState<'GATEWAY_SCAN' | 'BACKTRACK_RETURN'>('GATEWAY_SCAN');
 
@@ -367,7 +368,7 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
     return {
       asset: matchedAsset,
       ticket: matchedTicket,
-      went_in_ticket_no: matchedTicket?.ticket_no || (matchedAsset as any)?.last_floor_ticket_no || 'TKT-0002',
+      went_in_ticket_no: matchedTicket?.ticket_no || (matchedAsset as any)?.last_floor_ticket_no || 'IT012347',
       went_in_date: matchedTicket?.approved_at || matchedTicket?.created_at || (matchedAsset as any)?.last_floor_entered_at || '2026-09-20 10:30',
       went_in_floor: matchedTicket?.destination_floor || (matchedAsset as any)?.last_floor || matchedAsset?.location || 'FLOOR_3',
       went_in_port: matchedTicket?.port_number || (matchedAsset as any)?.last_port_number || (matchedAsset as any)?.network_port || 'SW03-P24',
@@ -451,6 +452,10 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
     }
   };
 
+    const handlePrintGateAuditLog = () => {
+    window.print();
+  };
+
   const handleExportGateScanCSV = () => {
     if (allLogs.length === 0) {
       alert('No scan log records captured yet to export.');
@@ -505,14 +510,26 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
           </div>
         </div>
 
-        <button
-          onClick={handleExportGateScanCSV}
-          disabled={allLogs.length === 0}
-          className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-200 font-semibold rounded-xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export Gate Clearance Log Excel/CSV ({allLogs.length})</span>
-        </button>
+        <div className="flex items-center space-x-2 no-print">
+          <button
+            type="button"
+            onClick={handlePrintGateAuditLog}
+            disabled={allLogs.length === 0}
+            className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm"
+            title="Generate a printer-friendly report for Security audit logs"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print Report</span>
+          </button>
+          <button
+            onClick={handleExportGateScanCSV}
+            disabled={allLogs.length === 0}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-200 font-semibold rounded-xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export Gate Clearance Log Excel/CSV ({allLogs.length})</span>
+          </button>
+        </div>
       </div>
 
       {/* Gate Clearance Shift Summary Widget */}
@@ -660,6 +677,25 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
       {terminalTab === 'BACKTRACK_RETURN' ? (
         /* Dedicated Backtrack Return Terminal View */
         <div className="space-y-6">
+      {/* Printable Report Header for Security Module */}
+      <div className="print-only-header">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ fontSize: "16pt", fontWeight: "bold", color: "#0f3b7a", margin: 0 }}>
+              [24]7.ai ENTERPRISE PLATINA GATE SECURITY AUDIT
+            </h1>
+            <h2 style={{ fontSize: "12pt", fontWeight: "600", color: "#1e293b", margin: "3pt 0 0 0" }}>
+              Module C: Hardware Clearance & Backtrack Audit Log
+            </h2>
+          </div>
+          <div style={{ textAlign: "right", fontSize: "8pt", color: "#475569" }}>
+            <div><strong>Report Date:</strong> {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</div>
+            <div><strong>Security Officer:</strong> {guardName} ({guardId})</div>
+            <div><strong>Total Logged Events:</strong> {allLogs.length}</div>
+          </div>
+        </div>
+      </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Col: Backtrack Input & Disposition Configuration */}
             <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -875,7 +911,7 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
                       <span className="px-1.5 py-0.5 rounded text-[9px] bg-blue-900 text-blue-200 border border-blue-600">OUTBOUND</span>
                     </div>
                     <div className="text-lg font-black text-amber-300">
-                      {detectedBacktrackInfo?.went_in_ticket_no || 'TKT-0002'}
+                      {detectedBacktrackInfo?.went_in_ticket_no || 'IT012347'}
                     </div>
                     <div className="text-[11px] text-slate-300 space-y-1 pt-1 border-t border-slate-700/60 font-sans">
                       <p><strong>Origin:</strong> IT Stock Room</p>
@@ -911,7 +947,7 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
                   <BarcodeGraphic
                     value={backtrackSuccessData?.came_back_ticket_no || backtrackSuccessData?.clearance_id || 'RET-2026-STOCK'}
                     label="RETURN MOVEMENT IDENTIFICATION: TICKET NUMBER"
-                    sublabel={`OFFICIAL RETURN TICKET: [${backtrackSuccessData?.came_back_ticket_no || 'RET-2026-AUTO'}] (ORIGIN WENT IN: [${detectedBacktrackInfo?.went_in_ticket_no || 'TKT-0002'}])`}
+                    sublabel={`OFFICIAL RETURN TICKET: [${backtrackSuccessData?.came_back_ticket_no || 'RET-2026-AUTO'}] (ORIGIN WENT IN: [${detectedBacktrackInfo?.went_in_ticket_no || 'IT012347'}])`}
                     height={46}
                   />
                 </div>
@@ -1121,7 +1157,7 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
                       setScannedInput(val);
                       autoSearchAndPasteTicket(val);
                     }}
-                    placeholder="e.g. Ticket Number (TKT-0001, RET-2026-0001) or Engineer Emp ID (01099318)"
+                    placeholder="e.g. Ticket Number (IT012346, IT012347) or Engineer Emp ID (01099318)"
                     className="w-full px-3 py-2 bg-white border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 rounded-xl font-mono text-xs font-bold text-slate-900 uppercase focus:outline-none shadow-xs transition-all"
                   />
                   {scannedInput && (
@@ -1240,9 +1276,9 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
                     setPhysicalCpuSerial(serial);
                     handleExecuteGateLookup(ticketNo, serial);
                   } else {
-                    setScannedInput('TKT-0001');
+                    setScannedInput('IT012346');
                     setPhysicalCpuSerial('S/N-H92G4K');
-                    handleExecuteGateLookup('TKT-0001', 'S/N-H92G4K');
+                    handleExecuteGateLookup('IT012346', 'S/N-H92G4K');
                   }
                 }}
                 className="py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold rounded-xl text-[11px] flex items-center justify-center space-x-1 cursor-pointer transition-all shadow-xs"
@@ -1257,7 +1293,7 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
                 type="button"
                 onClick={() => {
                   const approvedTicket = tickets.find(t => t.status === 'APPROVED') || tickets[0];
-                  const ticketNo = approvedTicket ? (approvedTicket.ticket_no || `TKT-${approvedTicket.id}`) : 'TKT-0001';
+                  const ticketNo = approvedTicket ? (approvedTicket.ticket_no || `TKT-${approvedTicket.id}`) : 'IT012346';
                   setScannedInput(ticketNo);
                   setPhysicalCpuSerial('S/N-WRONG-9999');
                   handleExecuteGateLookup(ticketNo, 'S/N-WRONG-9999');
@@ -1577,15 +1613,27 @@ export default function ScannerGate({ assets, tickets, scanLogs, onRefresh, init
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleExportGateScanCSV}
-            disabled={allLogs.length === 0}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center space-x-2 transition-all cursor-pointer shadow-xs"
-          >
-            <Download className="w-4 h-4 text-amber-400" />
-            <span>Export Gate Security Excel/CSV ({allLogs.length})</span>
-          </button>
+          <div className="flex items-center space-x-2 no-print">
+            <button
+              type="button"
+              onClick={handlePrintGateAuditLog}
+              disabled={allLogs.length === 0}
+              className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center space-x-2 transition-all cursor-pointer shadow-xs"
+              title="Print Gate Security Clearance Audit Log"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print Security Log</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportGateScanCSV}
+              disabled={allLogs.length === 0}
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center space-x-2 transition-all cursor-pointer shadow-xs"
+            >
+              <Download className="w-4 h-4 text-amber-400" />
+              <span>Export Gate Security Excel/CSV ({allLogs.length})</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

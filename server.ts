@@ -1,3 +1,22 @@
+
+function generateNextItTicketNo(existingTickets: any[]): string {
+  let highestNum = 12345;
+  for (const t of (existingTickets || [])) {
+    const tNo = (t.ticket_no || '').trim().toUpperCase();
+    const match = tNo.match(/^IT([0-9]{6})$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > highestNum) {
+        highestNum = num;
+      }
+    }
+  }
+  const nextNum = highestNum + 1;
+  return 'IT' + nextNum.toString().padStart(6, '0');
+}
+
+import fs from 'fs';
+import { handleChatbotQuery } from './server/chatbot';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -7,9 +26,22 @@ import { queueEmail, startEmailSyncWorker } from './server/email_service';
 
 async function startServer() {
   const app = express();
+
+app.get("/api/docs/download", (req, res) => {
+  const docPath = path.resolve(process.cwd(), "public", "TECHNICAL_ARCHITECTURE.doc");
+  if (fs.existsSync(docPath)) {
+    res.setHeader("Content-Disposition", "attachment; filename=247ai_Asset_Tracker_Technical_Architecture.doc");
+    res.setHeader("Content-Type", "application/msword");
+    return res.sendFile(docPath);
+  }
+  return res.status(404).json({ error: "Document not found" });
+});
+
   const PORT = 3000;
 
-  app.use(express.json());
+  
+// Endpoint to download the full Technical Architecture document (.doc)
+app.use(express.json());
 
   // Background workers init
   startEmailSyncWorker();
@@ -336,7 +368,7 @@ async function startServer() {
     }
 
     const ticketId = db.movement_tickets.length ? Math.max(...db.movement_tickets.map(t => t.id)) + 1 : 1;
-    const finalTicketNo = userTicketNo ? userTicketNo : `TKT-${ticketId.toString().padStart(4, '0')}`;
+    const finalTicketNo = (userTicketNo && userTicketNo.trim() !== '') ? userTicketNo.trim().toUpperCase() : generateNextItTicketNo(db.movement_tickets);
 
     const joinedSerials = registeredSerials.join(', ');
     const joinedBarcodes = registeredBarcodes.join(', ');
@@ -423,7 +455,7 @@ async function startServer() {
     if (status !== undefined && ['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
       ticket.status = status;
       if (status === 'APPROVED') {
-        const ticketIdTag = ticket.ticket_no || `TKT-${ticket.id.toString().padStart(4, '0')}`;
+        const ticketIdTag = ticket.ticket_no || ('IT' + (12345 + ticket.id).toString().padStart(6, '0'));
         (ticket as any).clearance_id = ticketIdTag;
         (ticket as any).approved_at = new Date().toISOString();
       }
@@ -479,7 +511,7 @@ async function startServer() {
     const isApproved = action === 'approve' || req.body.approved === true || req.body.status === 'APPROVED';
 
     if (isApproved) {
-      const ticketIdentification = ticket.ticket_no || `TKT-${ticket.id.toString().padStart(4, '0')}`;
+      const ticketIdentification = ticket.ticket_no || ('IT' + (12345 + ticket.id).toString().padStart(6, '0'));
       (ticket as any).status = 'APPROVED';
       (ticket as any).approved_at = new Date().toISOString();
       (ticket as any).approved_by_name = managerName;
@@ -1197,6 +1229,9 @@ async function startServer() {
   });
 
   // 12. API: Reset Database state
+
+
+    app.post('/api/chatbot/query', handleChatbotQuery);
   app.post('/api/test/reset', (req, res) => {
     const db = resetDb();
     res.json({ success: true, message: 'Database reset to default demo records.' });

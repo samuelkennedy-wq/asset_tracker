@@ -1,0 +1,89 @@
+# ==============================================================================
+# [24]7.ai Asset Tracking & Security Clearance Gateway - Docker Compose
+# Orchestrates: Node.js App + PostgreSQL Database + Nginx HTTPS Reverse Proxy
+# ==============================================================================
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # Service 1: PostgreSQL 16 Enterprise Relational Database
+  # ----------------------------------------------------------------------------
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: 247ai-postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: asset_admin
+      POSTGRES_PASSWORD: SecretAssetPass247!
+      POSTGRES_DB: asset_tracker_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - asset-network
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asset_admin -d asset_tracker_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # Service 2: Node.js Core Asset Tracker Engine
+  # ----------------------------------------------------------------------------
+  asset-tracker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 247ai-asset-tracker
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgres://asset_admin:SecretAssetPass247!@postgres-db:5432/asset_tracker_db
+    volumes:
+      - ./database.json:/app/database.json
+      - ./public:/app/public
+    networks:
+      - asset-network
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # Service 3: Nginx SSL / HTTPS Reverse Proxy (Port 443)
+  # ----------------------------------------------------------------------------
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: 247ai-nginx-proxy
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      asset-tracker:
+        condition: service_healthy
+    networks:
+      - asset-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  asset-network:
+    driver: bridge

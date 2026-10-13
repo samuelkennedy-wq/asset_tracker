@@ -337,7 +337,7 @@ const INITIAL_STATE: DatabaseState = {
   movement_tickets: [
     {
       id: 1,
-      ticket_no: 'TKT-0001',
+      ticket_no: 'IT012346',
       asset_barcode: 'CPU90002',
       asset_serial_number: 'S/N-H92G4K',
       origin_location: 'IT_ROOM',
@@ -354,7 +354,7 @@ const INITIAL_STATE: DatabaseState = {
     },
     {
       id: 2,
-      ticket_no: 'TKT-0002',
+      ticket_no: 'IT012347',
       asset_barcode: 'CPU90003',
       asset_serial_number: 'S/N-L34D9W',
       origin_location: 'IT_ROOM',
@@ -367,7 +367,7 @@ const INITIAL_STATE: DatabaseState = {
       engineer_emp_id: '010125496',
       reason: 'New system setup for executive suite',
       status: 'APPROVED',
-      clearance_id: 'TKT-0002',
+      clearance_id: 'IT012347',
       approved_by_name: 'D. Manoharan',
       approved_by_id: '010128793',
       created_at: new Date(Date.now() - 7200000).toISOString(),
@@ -375,7 +375,7 @@ const INITIAL_STATE: DatabaseState = {
     },
     {
       id: 3,
-      ticket_no: 'TKT-0003',
+      ticket_no: 'IT012348',
       asset_barcode: 'CPU90006',
       asset_serial_number: 'S/N-DL77F5',
       origin_location: 'IT_ROOM',
@@ -387,7 +387,7 @@ const INITIAL_STATE: DatabaseState = {
       engineer_emp_id: '01005651',
       reason: '7th floor office expansion',
       status: 'APPROVED',
-      clearance_id: 'TKT-0003',
+      clearance_id: 'IT012348',
       approved_by_name: 'D. Manoharan',
       approved_by_id: '010128793',
       created_at: new Date(Date.now() - 14400000).toISOString(),
@@ -395,7 +395,7 @@ const INITIAL_STATE: DatabaseState = {
     },
     {
       id: 4,
-      ticket_no: 'TKT-0004',
+      ticket_no: 'IT012349',
       asset_barcode: 'CPU90007',
       asset_serial_number: 'S/N-LN77F4',
       origin_location: 'IT_ROOM',
@@ -407,7 +407,7 @@ const INITIAL_STATE: DatabaseState = {
       engineer_emp_id: '01099318',
       reason: 'Development lab replacement',
       status: 'APPROVED',
-      clearance_id: 'TKT-0004',
+      clearance_id: 'IT012349',
       approved_by_name: 'D. Manoharan',
       approved_by_id: '010128793',
       gateway_clearance_status: 'BLOCKED',

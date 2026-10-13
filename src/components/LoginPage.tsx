@@ -1,3 +1,4 @@
+import CompanyLogo from './CompanyLogo';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, KeyRound, UserCheck, Lock, ScanBarcode, CheckCircle2, ArrowRight, ShieldCheck, Cpu, Terminal, User } from 'lucide-react';
@@ -97,9 +98,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       {/* Header Branding */}
       <header className="max-w-5xl w-full mx-auto flex items-center justify-between border-b border-slate-200 pb-4">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold font-mono text-sm shadow-sm">
-            24/7
-          </div>
+          <CompanyLogo size="lg" />
           <div>
             <h1 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <span>[24]7.ai Asset Tracking</span>

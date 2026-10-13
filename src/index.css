@@ -1,1 +1,134 @@
 @import "tailwindcss";
+
+/* -------------------------------------------------------------
+   PRINT VIEW MEDIA QUERY & AUDIT REPORT STYLING
+   Optimized for Manager & Security Audit Log Printouts
+   ------------------------------------------------------------- */
+@media print {
+  /* Set page geometry and clean margins */
+  @page {
+    size: letter landscape;
+    margin: 12mm 10mm 15mm 10mm;
+  }
+
+  /* Reset body colors and ensure white backgrounds */
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 9pt !important;
+    line-height: 1.3 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, top bars, buttons, modals, chat widgets & action controls */
+  header,
+  nav,
+  aside,
+  button,
+  .no-print,
+  [role="dialog"],
+  [aria-modal="true"],
+  .fixed,
+  .sticky,
+  input,
+  select,
+  textarea {
+    display: none !important;
+  }
+
+  /* Keep content full width and unclipped */
+  main,
+  .overflow-x-auto,
+  .overflow-y-auto {
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* High-fidelity printed tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    margin-top: 8pt !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  thead th {
+    background-color: #0f3b7a !important;
+    color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 5pt 4pt !important;
+    font-size: 7.5pt !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  tbody td {
+    border: 1px solid #e2e8f0 !important;
+    padding: 4.5pt 4pt !important;
+    font-size: 8pt !important;
+    color: #1e293b !important;
+    vertical-align: top !important;
+  }
+
+  tbody tr:nth-child(even) td {
+    background-color: #f8fafc !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Badges & statuses */
+  .badge-print-cleared,
+  span:has(span) {
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  /* Professional Printable Header */
+  .print-only-header {
+    display: block !important;
+    margin-bottom: 12pt !important;
+    border-bottom: 2pt solid #0f3b7a !important;
+    padding-bottom: 8pt !important;
+  }
+
+  .print-only-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 15pt !important;
+    border-top: 1pt solid #cbd5e1 !important;
+    padding-top: 6pt !important;
+    font-size: 7.5pt !important;
+    color: #64748b !important;
+  }
+}
+
+/* Screen state for print-only elements */
+@media screen {
+  .print-only-header,
+  .print-only-footer {
+    display: none !important;
+  }
+}

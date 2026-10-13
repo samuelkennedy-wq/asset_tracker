@@ -1,3 +1,4 @@
+import CompanyLogo from './CompanyLogo';
 import React, { useState, useRef, useEffect } from 'react';
 import { Asset, MovementTicket } from '../types';
 import { 
@@ -26,9 +27,25 @@ const SYSTEM_MOVEMENT_ENGINEERS = [
   'Mahantesh'
 ];
 
+
+function getNextItTicketNumber(existingTickets: MovementTicket[]): string {
+  let highestNum = 12345;
+  for (const t of (existingTickets || [])) {
+    const tNo = (t.ticket_no || '').trim().toUpperCase();
+    const match = tNo.match(/^IT([0-9]{6})$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > highestNum) {
+        highestNum = num;
+      }
+    }
+  }
+  return 'IT' + (highestNum + 1).toString().padStart(6, '0');
+}
+
 export default function MovementDesk({ assets, tickets, onRefresh }: MovementDeskProps) {
   // Form State
-  const [ticketNumber, setTicketNumber] = useState('TKT-2026-001');
+  const [ticketNumber, setTicketNumber] = useState(() => getNextItTicketNumber(tickets));
   const [requestorName, setRequestorName] = useState('SAMUEL KENNEDY');
   const [requestorEmpId, setRequestorEmpId] = useState('EMP-01099234');
   const [engineerName, setEngineerName] = useState('Basavaraj');
@@ -42,8 +59,8 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
   // Locations
   const [sourceLocation, setSourceLocation] = useState('IT Room');
   const [destinationFloor, setDestinationFloor] = useState('Floor 3');
-  const [targetRoom, setTargetRoom] = useState('Workstation Bay 304');
-  const [portNumber, setPortNumber] = useState('SW03-P18');
+  const [targetRoom, setTargetRoom] = useState('');
+  const [portNumber, setPortNumber] = useState('');
   const [reason, setReason] = useState('IT Infrastructure upgrade / workstation deployment');
 
   // Floor Entry Historical Linkage State
@@ -126,7 +143,7 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
     } else {
       setSourceLocation('IT Room');
       setDestinationFloor('Floor 3');
-      setTargetRoom('Workstation Bay 304');
+      setTargetRoom('');
       setReason('IT Infrastructure upgrade / workstation deployment');
     }
   };
@@ -423,33 +440,7 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
   return (
     <div className="space-y-5">
       {/* Module Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shrink-0 font-bold">
-            <Cpu className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900">IT Field Engineer Ticket Desk</h2>
-              <span className="text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-bold">
-                TICKET CREATION
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Enter ticket number manually and scan CPU serial numbers sequentially via barcode scanner.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleExportCSV}
-          disabled={tickets.length === 0}
-          className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-200 font-semibold rounded-xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export CSV ({tickets.length})</span>
-        </button>
-      </div>
+      
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Ticket Raising Form */}
@@ -566,7 +557,7 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
                         type="text"
                         value={previousFloorTicketNo}
                         onChange={(e) => setPreviousFloorTicketNo(e.target.value.toUpperCase())}
-                        placeholder="e.g. TKT-0001"
+                        placeholder="e.g. IT012346"
                         className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono font-bold text-slate-900 bg-amber-50/40"
                       />
                     </div>
@@ -633,7 +624,7 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
                     required
                     value={ticketNumber}
                     onChange={(e) => setTicketNumber(e.target.value.toUpperCase())}
-                    placeholder="E.G. TKT-2026-001"
+                    placeholder="E.G. IT012346"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold text-blue-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white uppercase"
                   />
                   <FileText className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
@@ -1019,15 +1010,15 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                    Target Room / Workstation Bay
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                    Target Room / Workstation Bay <span className="text-slate-400 font-normal lowercase">(enter manually)</span>
                   </label>
                   <input
                     type="text"
                     value={targetRoom}
                     onChange={(e) => setTargetRoom(e.target.value)}
-                    placeholder="e.g. Finance Desk 304 / Bay-A"
-                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-900 font-medium focus:ring-1 focus:ring-blue-500 bg-white"
+                    placeholder="e.g. Room 702 / Bay P-204 / Finance Desk 304"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-900 font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                   />
                 </div>
 
@@ -1053,8 +1044,8 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
                     required
                     value={portNumber}
                     onChange={(e) => setPortNumber(e.target.value.toUpperCase())}
-                    placeholder="e.g. SW03-P18, Port 24, P-08"
-                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-indigo-900 focus:ring-2 focus:ring-indigo-500 bg-white uppercase"
+                    placeholder="e.g. SW03-P18, SW07-P24, Port 24, P-08 (Enter manually)"
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white uppercase"
                   />
                   {/* Quick port suggestions */}
                   <div className="flex flex-wrap gap-1 pt-1.5">
@@ -1117,7 +1108,8 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
         <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Movement Ticket Registry</h3>
+              <div className="flex items-center space-x-2.5 mb-2"><CompanyLogo size="sm" /></div>
+            <h3 className="font-bold text-slate-900 text-sm">Movement Ticket Registry</h3>
               <p className="text-[11px] text-slate-500">Active movement tickets raised by IT Engineers</p>
             </div>
             <span className="text-xs font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full">

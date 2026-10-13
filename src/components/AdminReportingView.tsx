@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Asset, MovementTicket, GateScanLog, Employee } from '../types';
-import { Download, Database, Users, Layers, ShieldCheck, FileSpreadsheet, Plus, CheckCircle2, Search, Filter, Building2, User, AlertCircle, Check } from 'lucide-react';
+import { Download, Database, Users, Layers, ShieldCheck, FileSpreadsheet, FileText, Plus, CheckCircle2, Search, Filter, Building2, User, AlertCircle, Check } from 'lucide-react';
 import Papa from 'papaparse';
 
 interface AdminReportingViewProps {
@@ -210,13 +210,25 @@ export default function AdminReportingView({ assets, tickets, scanLogs = [], onR
           </p>
         </div>
 
-        <button
-          onClick={handleCombinedMasterCSVExport}
+        <div className="flex items-center space-x-2">
+          <a
+            href="/TECHNICAL_ARCHITECTURE.doc"
+            download="247ai_Asset_Tracker_Technical_Architecture.doc"
+            className="px-4 py-2.5 bg-blue-700 hover:bg-blue-600 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 transition-all shadow-lg cursor-pointer"
+            title="Download complete technical architecture and system design document as Word (.doc)"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Download Technical Architecture (.doc)</span>
+          </a>
+          <button
+            onClick={handleCombinedMasterCSVExport}
+
           className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 transition-all shadow-lg cursor-pointer"
         >
           <FileSpreadsheet className="w-4 h-4" />
           <span>Combined Master Export CSV (Tickets + Approvals + Gate Scans)</span>
         </button>
+        </div>
       </div>
 
       {/* Tabs Bar */}
