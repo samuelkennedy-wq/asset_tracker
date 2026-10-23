@@ -116,12 +116,15 @@ app.use(express.json());
     if (!multiStr || !target) return false;
     const cleanTarget = target.trim().toUpperCase();
     if (!cleanTarget) return false;
-    const normTarget = cleanTarget.replace(/^(S\/N|CPU|MON|KB|MS)-/i, '');
+    const normTarget = cleanTarget.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '');
+    if (!normTarget || normTarget.length < 3) return false;
+
     const items = multiStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
     return items.some(item => {
       if (item === cleanTarget) return true;
-      const normItem = item.replace(/^(S\/N|CPU|MON|KB|MS)-/i, '');
-      return normItem === normTarget || (normTarget.length >= 3 && normItem.includes(normTarget)) || (normItem.length >= 3 && normTarget.includes(normItem));
+      const normItem = item.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '');
+      // Strict full exact match only - strictly do NOT allow partial substring matching
+      return normItem === normTarget;
     });
   };
 
@@ -738,17 +741,47 @@ app.use(express.json());
     const guard = guard_name || 'Gate Officer Security-01';
     const direction: 'OUTBOUND_EXIT' | 'INBOUND_ENTRY' = movement_direction === 'INBOUND_ENTRY' ? 'INBOUND_ENTRY' : 'OUTBOUND_EXIT';
 
-    // Find associated asset by scanned barcode or serial
+    const activeSearchSerial = cleanPhysicalSerial || cleanInput;
+    const normActiveSerial = activeSearchSerial.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '');
+    const isTicketNumberFormat = /^IT[0-9]{4,8}$/i.test(cleanInput) || /^TKT-[0-9]+/i.test(cleanInput);
+    const isEmpIdFormat = /^[0-9]{6,10}$/.test(cleanInput);
+
+    // Require complete full serial number - block partial inputs like 1-3 letters
+    if (!isTicketNumberFormat && !isEmpIdFormat && normActiveSerial.length < 4) {
+      res.json({
+        success: false,
+        scan_result: 'DENIED',
+        movement_direction: direction,
+        serial_matched: false,
+        expected_serial: 'FULL SERIAL NUMBER REQUIRED',
+        scanned_physical_serial: activeSearchSerial,
+        message: `INCOMPLETE SERIAL NUMBER: '${activeSearchSerial}' is not fully entered. Serial numbers must be fully scanned or entered (minimum 4 characters, e.g. S/N-H92G4K) to verify against the database. Gate clearance DENIED.`,
+        ticket: null,
+        asset: null,
+        can_backtrack: false,
+        went_in_ticket: null,
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    // Find associated asset by scanned barcode or serial (strict full match)
     const asset = db.assets.find(
       a => a.barcode.toUpperCase().trim() === cleanInput ||
            a.serial_number.toUpperCase().trim() === cleanInput ||
+           (normActiveSerial && a.serial_number.toUpperCase().trim().replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '') === normActiveSerial) ||
            (cleanPhysicalSerial && (
              a.barcode.toUpperCase().trim() === cleanPhysicalSerial ||
-             a.serial_number.toUpperCase().trim() === cleanPhysicalSerial
+             a.serial_number.toUpperCase().trim() === cleanPhysicalSerial ||
+             a.serial_number.toUpperCase().trim().replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '') === cleanPhysicalSerial.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '')
            ))
     );
 
-    // Find ticket by serial_number, barcode, ticket_no, clearance_id, engineer_emp_id, requestor_emp_id, or linked asset
+    // Find ticket by:
+    // 1. ticket_no or clearance_id
+    // 2. engineer_emp_id or requestor_emp_id
+    // 3. exact full serial in asset_serial_number or asset_barcode
+    // 4. linked asset
     const ticket = db.movement_tickets.find(
       t => (t.ticket_no && t.ticket_no.toUpperCase().trim() === cleanInput) ||
            (cleanPhysicalSerial && t.ticket_no && t.ticket_no.toUpperCase().trim() === cleanPhysicalSerial) ||
@@ -772,42 +805,36 @@ app.use(express.json());
     let message = '';
     let serialMatched = false;
 
-    // Determine expected serial number from IT Room request
+    // Expected serial number from IT Room request
     const expectedSerial = ticket 
       ? ((ticket as any).asset_serial_number || ticket.asset_barcode) 
-      : (asset ? asset.serial_number : (cleanPhysicalSerial || cleanInput));
+      : (asset ? asset.serial_number : activeSearchSerial);
 
-    // DUAL / ANY-ONE MATCH VERIFICATION CHECK
-    // As per requirement: Employee ID should be the gate pass clearance of the engineer; any one valid ticket detail matches for movement
+    // Strict Serial Verification
     if (ticket) {
-      const ticketValidIdentifiers = [
-        ticket.ticket_no ? ticket.ticket_no.toUpperCase().trim() : '',
-        (ticket as any).clearance_id ? (ticket as any).clearance_id.toUpperCase().trim() : '',
-        ticket.engineer_emp_id ? ticket.engineer_emp_id.toUpperCase().trim() : '',
-        ticket.requestor_emp_id ? ticket.requestor_emp_id.toUpperCase().trim() : '',
-      ].filter(Boolean);
-
-      const inputMatchesAny = ticketValidIdentifiers.includes(cleanInput) ||
-        isSerialInMultiList((ticket as any).asset_serial_number, cleanInput) ||
-        isSerialInMultiList(ticket.asset_barcode, cleanInput);
-
-      const physicalMatchesAny = !cleanPhysicalSerial ||
-        ticketValidIdentifiers.includes(cleanPhysicalSerial) ||
-        isSerialInMultiList((ticket as any).asset_serial_number, cleanPhysicalSerial) ||
-        isSerialInMultiList(ticket.asset_barcode, cleanPhysicalSerial) ||
-        cleanPhysicalSerial === cleanInput;
-
-      if (inputMatchesAny || physicalMatchesAny) {
-        serialMatched = true;
+      if (cleanPhysicalSerial && cleanPhysicalSerial !== ticket.ticket_no && cleanPhysicalSerial !== ticket.engineer_emp_id) {
+        // Physical serial was explicitly provided; it MUST match the ticket's registered serials or barcodes
+        const physicalMatchesTicket = isSerialInMultiList((ticket as any).asset_serial_number, cleanPhysicalSerial) ||
+          isSerialInMultiList(ticket.asset_barcode, cleanPhysicalSerial) ||
+          (asset && (
+            isSerialInMultiList((ticket as any).asset_serial_number, asset.serial_number) ||
+            isSerialInMultiList(ticket.asset_barcode, asset.barcode)
+          ));
+        serialMatched = Boolean(physicalMatchesTicket);
       } else {
-        serialMatched = false;
+        // Either only cleanInput was provided or it matches ticket identifiers
+        const inputMatchesSerial = isSerialInMultiList((ticket as any).asset_serial_number, cleanInput) ||
+          isSerialInMultiList(ticket.asset_barcode, cleanInput);
+        const inputMatchesIdentifier = (ticket.ticket_no && ticket.ticket_no.toUpperCase().trim() === cleanInput) ||
+          ((ticket as any).clearance_id && (ticket as any).clearance_id.toUpperCase().trim() === cleanInput) ||
+          (ticket.engineer_emp_id && ticket.engineer_emp_id.toUpperCase().trim() === cleanInput);
+        serialMatched = Boolean(inputMatchesSerial || inputMatchesIdentifier);
       }
     } else {
       serialMatched = false;
     }
 
     // Check for previous floor deployment ticket for backtracking
-    const activeSearchSerial = cleanPhysicalSerial || cleanInput;
     const pastFloorTicket = db.movement_tickets.slice().reverse().find(t =>
       (isSerialInMultiList((t as any).asset_serial_number, activeSearchSerial) ||
        isSerialInMultiList(t.asset_barcode, activeSearchSerial) ||
@@ -821,38 +848,40 @@ app.use(express.json());
     if (!ticket) {
       if (direction === 'INBOUND_ENTRY' && (pastFloorTicket || asset?.last_floor_ticket_no)) {
         const wentInTktNo = pastFloorTicket?.ticket_no || asset?.last_floor_ticket_no || 'TKT-0001';
-        const wentInDate = pastFloorTicket?.approved_at || pastFloorTicket?.created_at || asset?.last_floor_entered_at || new Date().toISOString();
         const wentInFloor = pastFloorTicket?.destination_floor || asset?.last_floor || 'FLOOR_3';
         const wentInPort = pastFloorTicket?.port_number || asset?.last_port_number || 'N/A';
         scanResult = 'HOLD';
         message = `INBOUND RETURN TO STOCK ROOM DETECTED (NO TICKET PRESENT): CPU '${activeSearchSerial}' originally went in under Ticket ${wentInTktNo} on ${wentInFloor} (Port: ${wentInPort}). Ready for Gate Security Return Backtrack & Clearance.`;
       } else {
         scanResult = 'DENIED';
-        message = `DENIED — NO APPROVED TICKET FOUND! CPU Serial Number '${cleanPhysicalSerial || cleanInput}' is not registered in any IT Room movement request. CPU NOT ALLOWED INSIDE THE FLOOR!`;
+        message = `DENIED — NO MOVEMENT TICKET FOUND! CPU Serial Number '${activeSearchSerial}' does not belong to any raised movement ticket in the database. CPU NOT ALLOWED THROUGH GATE!`;
       }
     } else if (!serialMatched) {
       scanResult = 'DENIED';
-      message = `SECURITY ALERT: SERIAL NUMBERS MISMATCH! Physical scanned CPU S/N '${cleanPhysicalSerial}' is not listed under Ticket ${ticket.ticket_no || `#TKT-${ticket.id}`}. Registered serial(s): '${ticket.asset_serial_number}'. CPU NOT ALLOWED THROUGH GATE!`;
-    } else if (ticket.status === 'APPROVED') {
+      message = `SECURITY ALERT: SERIAL NUMBERS MISMATCH! Physical scanned CPU S/N '${cleanPhysicalSerial}' is not listed under Ticket ${ticket.ticket_no || `#TKT-${ticket.id}`}. Registered serial(s): '${expectedSerial}'. CPU NOT ALLOWED THROUGH GATE!`;
+    } else if (ticket.status === 'REJECTED' || (ticket as any).approval_status === 'REJECTED') {
+      scanResult = 'DENIED';
+      message = `RED LIGHT — MOVEMENT REJECTED! CPU Serial '${activeSearchSerial}' belongs to Movement Ticket ${ticket.ticket_no || `#${ticket.id}`}, which was REJECTED by IT Manager. Reason: ${(ticket as any).rejection_reason || 'Security hold'}. CPU NOT ALLOWED THROUGH GATEWAY!`;
+    } else if (ticket.status === 'APPROVED' && (ticket as any).approval_status !== 'REJECTED') {
       scanResult = 'CLEARED';
       const engineerInfo = (ticket as any).engineer_emp_id ? ` [Engineer: ${(ticket as any).engineer_name || 'Assigned Engineer'} (Emp ID: ${(ticket as any).engineer_emp_id})]` : '';
       const ticketIdentifier = ticket.ticket_no || `#TKT-${ticket.id}`;
       if (direction === 'OUTBOUND_EXIT') {
-        message = `OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Approved Ticket ${ticketIdentifier} authorizes movement for serial '${cleanPhysicalSerial || expectedSerial}'! Authorized to exit IT Room for destination ${ticket.destination_floor}. Movement Identification: Ticket [${ticketIdentifier}]${engineerInfo}.`;
+        message = `OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Approved Ticket ${ticketIdentifier} authorizes movement for CPU Serial '${activeSearchSerial}'! Raised by ${ticket.requestor_name || 'Requestor'} for destination ${ticket.destination_floor} (Port: ${ticket.port_number || 'N/A'}). Movement Identification: Ticket [${ticketIdentifier}]${engineerInfo}.`;
         if (asset) {
           asset.current_location = 'TRANSIT_GATE';
           asset.status = 'AVAILABLE';
         }
       } else {
-        message = `INBOUND ENTRY PERMITTED — GREEN LIGHT ✓ Approved Ticket ${ticketIdentifier} authorizes movement for serial '${cleanPhysicalSerial || expectedSerial}'! CPU successfully received inside ${ticket.destination_floor}. Movement Identification: Ticket [${ticketIdentifier}]${engineerInfo}.`;
+        message = `INBOUND ENTRY PERMITTED — GREEN LIGHT ✓ Approved Ticket ${ticketIdentifier} authorizes movement for CPU Serial '${activeSearchSerial}'! CPU successfully received inside ${ticket.destination_floor} (Port: ${ticket.port_number || 'N/A'}). Movement Identification: Ticket [${ticketIdentifier}]${engineerInfo}.`;
         if (asset) {
           asset.current_location = ticket.destination_floor;
           asset.status = 'DEPLOYED';
         }
       }
-    } else if (ticket.status === 'PENDING') {
+    } else if (ticket.status === 'PENDING' || (ticket as any).approval_status === 'PENDING') {
       scanResult = 'HOLD';
-      message = `HOLD AT GATEWAY — AWAITING MANAGER APPROVAL! Ticket ${ticket.ticket_no || `#${ticket.id}`} for CPU S/N '${expectedSerial}' is pending IT Manager authorization. CPU NOT ALLOWED THROUGH GATEWAY!`;
+      message = `HOLD AT GATEWAY — AWAITING MANAGER APPROVAL! CPU Serial '${activeSearchSerial}' belongs to Movement Ticket ${ticket.ticket_no || `#${ticket.id}`}, which is still PENDING IT Manager authorization. CPU NOT ALLOWED THROUGH GATEWAY!`;
     } else {
       scanResult = 'DENIED';
       message = `RED LIGHT — MOVEMENT REJECTED! Ticket ${ticket.ticket_no || `#${ticket.id}`} was REJECTED by IT Manager. Reason: ${(ticket as any).rejection_reason || 'Security hold'}. CPU NOT ALLOWED THROUGH GATEWAY!`;
@@ -1379,78 +1408,6 @@ app.use(express.json());
     saveDb();
 
     res.json({ success: true, message: `Access for ${removedUser.name} has been revoked and deleted.` });
-  });
-
-  // 11.9 API: Enterprise SSO & Active Directory Configuration
-  app.get('/api/auth/sso/config', (req, res) => {
-    const db = loadDb();
-    const config = (db as any).sso_config || {
-      authMode: 'TESTING_ROLE_SELECTOR',
-      provider: 'azure_ad',
-      tenantId: '247ai-corp-directory-tenant-id',
-      clientId: '01a2b3c4-5678-90ab-cdef-247ai0000001',
-      clientSecretConfigured: true,
-      allowedDomain: '@247.ai',
-      redirectUri: `${req.protocol}://${req.get('host')}/api/auth/callback`,
-      adGroupMappings: {
-        managerGroup: 'SG-247AI-IT-APPROVAL-MANAGERS',
-        securityGroup: 'SG-247AI-PLATINA-GATE-SECURITY',
-        engineerGroup: 'SG-247AI-FIELD-ENGINEERS'
-      }
-    };
-    res.json({ success: true, config });
-  });
-
-  app.post('/api/auth/sso/config', (req, res) => {
-    const newConfig = req.body;
-    const db = loadDb();
-    (db as any).sso_config = newConfig;
-    logSystem('INFO', `SSO Configuration updated: Mode is now [${newConfig.authMode || 'TESTING_ROLE_SELECTOR'}] via Provider [${newConfig.provider || 'azure_ad'}]`);
-    saveDb();
-    res.json({ success: true, message: 'SSO configuration updated successfully.', config: newConfig });
-  });
-
-  app.post('/api/auth/sso/verify-token', (req, res) => {
-    const { email, provider } = req.body;
-    if (!email) {
-      res.status(400).json({ success: false, error: 'Email parameter is required.' });
-      return;
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail.endsWith('@247.ai')) {
-      res.status(401).json({ success: false, error: 'Unauthorized domain. Enterprise SSO requires an authorized @247.ai address.' });
-      return;
-    }
-
-    let mappedRole = 'IT Field Engineer';
-    let roleId = 'module_a_engineer';
-    let adGroup = 'SG-247AI-FIELD-ENGINEERS';
-
-    if (cleanEmail.includes('dominic') || cleanEmail.includes('manoharan') || cleanEmail.includes('jyothi') || cleanEmail.includes('manager')) {
-      mappedRole = 'IT Approval Manager';
-      roleId = 'module_b_manager';
-      adGroup = 'SG-247AI-IT-APPROVAL-MANAGERS';
-    } else if (cleanEmail.includes('platina') || cleanEmail.includes('security') || cleanEmail.includes('gate')) {
-      mappedRole = 'Gate Security Clearance Officer';
-      roleId = 'module_c_security';
-      adGroup = 'SG-247AI-PLATINA-GATE-SECURITY';
-    }
-
-    logSystem('SUCCESS', `SSO Token Validated for ${cleanEmail} via ${provider || 'Azure AD'} -> Mapped Role: ${mappedRole} (${adGroup})`);
-
-    res.json({
-      success: true,
-      mappedRole,
-      roleId,
-      adGroup,
-      tokenClaims: {
-        iss: provider === 'google_workspace' ? 'https://accounts.google.com' : 'https://login.microsoftonline.com/247ai',
-        sub: `oidc_sub_${Buffer.from(cleanEmail).toString('base64').slice(0, 12)}`,
-        email: cleanEmail,
-        name: cleanEmail.split('@')[0].split('.').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
-        groups: [adGroup, 'All-Employees@247.ai']
-      }
-    });
   });
 
   // 12. API: Reset Database state

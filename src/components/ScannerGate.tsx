@@ -37,6 +37,8 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
   const [gateLogs, setGateLogs] = useState<GateScanLog[]>([]);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [autoPastedTicketNotice, setAutoPastedTicketNotice] = useState<string | null>(null);
+  const [matchedTicketPreview, setMatchedTicketPreview] = useState<MovementTicket | null>(null);
+  const [incompleteSerialNotice, setIncompleteSerialNotice] = useState<string | null>(null);
 
   // Backtrack Return to Stock Room Specific States
   const [backtrackSerial, setBacktrackSerial] = useState(initialSelectedBarcode || '');
@@ -84,9 +86,25 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
 
   // Helper to search ticket by CPU serial number, engineer emp ID, clearance pass, or barcode and auto-paste into IT Room ticket input
   const autoSearchAndPasteTicket = (serialOrQuery: string) => {
-    if (!serialOrQuery || serialOrQuery.trim().length < 2) return;
+    if (!serialOrQuery || !serialOrQuery.trim()) {
+      setMatchedTicketPreview(null);
+      setAutoPastedTicketNotice(null);
+      setIncompleteSerialNotice(null);
+      return;
+    }
     const clean = serialOrQuery.trim().toUpperCase();
-    const cleanNorm = clean.replace(/^(S\/N|CPU)-/i, '');
+    const cleanNorm = clean.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '');
+    const isTicketOrEmpId = /^IT[0-9]+/i.test(clean) || /^[0-9]{6,}$/.test(clean);
+
+    // If user is entering a serial number and it's less than 4 chars, flag incomplete
+    if (!isTicketOrEmpId && cleanNorm.length > 0 && cleanNorm.length < 4) {
+      setIncompleteSerialNotice(`Serial number '${clean}' is not fully entered. Enter or scan complete CPU serial (e.g. S/N-H92G4K).`);
+      setMatchedTicketPreview(null);
+      setAutoPastedTicketNotice(null);
+      return;
+    }
+
+    setIncompleteSerialNotice(null);
 
     const matchedTicket = tickets.find(t => {
       if (t.ticket_no && t.ticket_no.toUpperCase() === clean) return true;
@@ -95,27 +113,31 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
       if (t.requestor_emp_id && t.requestor_emp_id.toUpperCase() === clean) return true;
 
       const serials = (t.asset_serial_number || '').toUpperCase().split(',').map(s => s.trim());
-      if (serials.some(s => s === clean || s.replace(/^(S\/N|CPU)-/i, '') === cleanNorm)) return true;
+      if (serials.some(s => s === clean || s.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '') === cleanNorm)) return true;
 
       const barcodes = (t.asset_barcode || '').toUpperCase().split(',').map(s => s.trim());
-      if (barcodes.some(b => b === clean || b.replace(/^(S\/N|CPU)-/i, '') === cleanNorm)) return true;
+      if (barcodes.some(b => b === clean || b.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '') === cleanNorm)) return true;
 
       return assets.some(a => 
-        (a.serial_number.toUpperCase() === clean || a.barcode.toUpperCase() === clean) &&
+        (a.serial_number.toUpperCase() === clean || a.barcode.toUpperCase() === clean || a.serial_number.toUpperCase().replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '') === cleanNorm) &&
         (serials.includes(a.serial_number.toUpperCase()) || barcodes.includes(a.barcode.toUpperCase()))
       );
     });
 
     if (matchedTicket && matchedTicket.ticket_no) {
+      setMatchedTicketPreview(matchedTicket);
       if (scannedInput !== matchedTicket.ticket_no && scannedInput !== matchedTicket.engineer_emp_id) {
         const isEngineerMatch = matchedTicket.engineer_emp_id && matchedTicket.engineer_emp_id.toUpperCase() === clean;
         const matchLabel = isEngineerMatch
           ? `Engineer Employee ID (${matchedTicket.engineer_emp_id} - ${matchedTicket.engineer_name || 'Engineer'})`
           : (matchedTicket as any).clearance_id && (matchedTicket as any).clearance_id.toUpperCase() === clean
           ? `Clearance Pass ID (${(matchedTicket as any).clearance_id})`
-          : `Ticket (${matchedTicket.ticket_no})`;
-        setAutoPastedTicketNotice(`✓ Matched via ${matchLabel} → Ticket ${matchedTicket.ticket_no} (${matchedTicket.status === 'APPROVED' ? 'Approved & Cleared for Movement' : `Status: ${matchedTicket.status}`})`);
+          : `CPU Hardware Serial (${clean})`;
+        setAutoPastedTicketNotice(`✓ Matched via ${matchLabel} → Raised under Ticket ${matchedTicket.ticket_no} (${matchedTicket.status === 'APPROVED' ? 'Approved & Cleared for Movement' : `Status: ${matchedTicket.status}`})`);
       }
+    } else {
+      setMatchedTicketPreview(null);
+      setAutoPastedTicketNotice(null);
     }
   };
 
@@ -254,12 +276,31 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
       cleanPhysicalSerial = physVal.cleanSerial;
     }
 
-    // Duplicate detection across active batch session
+    // Enforce serial completeness check: A CPU serial number must be fully entered
     const activeTargetSerial = cleanPhysicalSerial || cleanTicketInput;
-    const normTarget = activeTargetSerial.replace(/^(S\/N|CPU)-/i, '');
+    const normTarget = activeTargetSerial.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '');
+    const isTicketOrEmpId = /^IT[0-9]+/i.test(activeTargetSerial) || /^[0-9]{6,}$/.test(activeTargetSerial);
 
+    if (!isTicketOrEmpId && normTarget.length < 4) {
+      playRejectionSoundBuffer();
+      setScanResult('DENIED');
+      setResultDetails({
+        scan_result: 'DENIED',
+        message: `INCOMPLETE SERIAL NUMBER: '${activeTargetSerial}' is not fully entered. Serial numbers must be fully entered or scanned as per the scanner to verify against movement tickets. Clearance DENIED.`,
+        scanned_physical_serial: activeTargetSerial,
+        expected_serial: 'FULL SERIAL NUMBER REQUIRED'
+      });
+      return;
+    }
+
+    // If a ticket was identified by this serial number and no ticket was manually entered, auto-link it
+    if (matchedTicketPreview && !cleanTicketInput) {
+      cleanTicketInput = matchedTicketPreview.ticket_no || '';
+    }
+
+    // Duplicate detection across active batch session
     const existingOccurrences = scannedBatchSerials.filter(
-      (s) => s.replace(/^(S\/N|CPU)-/i, '') === normTarget
+      (s) => s.replace(/^(S\/N|CPU|MON|KB|MS|SN)-?/i, '') === normTarget
     ).length;
 
     if (existingOccurrences > 0) {
@@ -1222,8 +1263,56 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
                 />
               </div>
 
+              {/* Incomplete Serial Notice */}
+              {incompleteSerialNotice && (
+                <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs font-bold text-amber-900 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>{incompleteSerialNotice}</span>
+                  </div>
+                  <button onClick={() => setIncompleteSerialNotice(null)} className="text-slate-400 hover:text-slate-700 font-bold ml-2">✕</button>
+                </div>
+              )}
+
+              {/* Identified Movement Ticket Preview Card */}
+              {matchedTicketPreview && (
+                <div className="p-3.5 bg-blue-50/90 border-2 border-blue-300 rounded-xl space-y-2 text-xs shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                      <span>Identified in Movement Database</span>
+                    </div>
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      matchedTicketPreview.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                      matchedTicketPreview.status === 'REJECTED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                      'bg-amber-100 text-amber-800 border border-amber-300'
+                    }`}>
+                      {matchedTicketPreview.status === 'APPROVED' ? '✓ APPROVED FOR GATE CLEARANCE' : matchedTicketPreview.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[11px] bg-white p-2.5 rounded-lg border border-blue-200">
+                    <div>
+                      <span className="text-[9px] text-slate-500 uppercase block font-sans">Raised Under Ticket #</span>
+                      <strong className="text-blue-700 font-bold text-xs">{matchedTicketPreview.ticket_no}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500 uppercase block font-sans">Destination Floor</span>
+                      <strong className="text-slate-800 font-bold">{matchedTicketPreview.destination_floor} ({matchedTicketPreview.port_number || 'N/A'})</strong>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500 uppercase block font-sans">Requestor</span>
+                      <span className="text-slate-700 truncate block">{matchedTicketPreview.requestor_name || 'IT Staff'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500 uppercase block font-sans">Assigned Engineer</span>
+                      <span className="text-slate-700 truncate block">{matchedTicketPreview.engineer_name || 'Engineer'} ({matchedTicketPreview.engineer_emp_id})</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Auto-Pasted Ticket Indicator */}
-              {autoPastedTicketNotice && (
+              {autoPastedTicketNotice && !matchedTicketPreview && (
                 <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-900 flex items-center justify-between">
                   <span>{autoPastedTicketNotice}</span>
                   <button onClick={() => setAutoPastedTicketNotice(null)} className="text-slate-400 hover:text-slate-700 font-bold ml-2">✕</button>
@@ -1449,6 +1538,16 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
                   />
                 </div>
 
+                {resultDetails?.ticket && (
+                  <div className="p-3 bg-amber-600/40 rounded-xl border border-amber-700/60 font-mono text-xs space-y-1">
+                    <span className="text-[10px] text-amber-950 uppercase font-sans font-bold">Identified Movement Ticket:</span>
+                    <p className="text-sm font-bold text-slate-950">Ticket #{resultDetails.ticket.ticket_no}</p>
+                    <p className="text-[11px] text-slate-900 font-sans">
+                      Requestor: <strong>{resultDetails.ticket.requestor_name}</strong> | Destination: <strong>{resultDetails.ticket.destination_floor} (Port: {resultDetails.ticket.port_number || 'N/A'})</strong>
+                    </p>
+                  </div>
+                )}
+
                 <div className="p-4 bg-amber-600/50 rounded-xl border border-amber-700/60 text-xs font-mono font-bold text-slate-950 space-y-1">
                   <p>⚠️ Ticket status: PENDING MANAGER APPROVAL</p>
                   <p>Asset S/N must remain at IT Room until D. Manoharan authorizes the clearance pass.</p>
@@ -1508,7 +1607,13 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
                         </span>
                       </div>
                       <h3 className="text-xl font-black tracking-wide text-rose-200 uppercase mt-1">
-                        SECURITY ALERT: SERIAL MISMATCH DETECTED
+                        {resultDetails?.ticket?.status === 'REJECTED' || (resultDetails?.ticket as any)?.approval_status === 'REJECTED'
+                          ? 'MOVEMENT REJECTED BY IT MANAGER'
+                          : !resultDetails?.ticket
+                          ? 'NO MOVEMENT TICKET FOUND IN DATABASE'
+                          : !resultDetails?.serial_matched
+                          ? 'SECURITY ALERT: SERIAL MISMATCH DETECTED'
+                          : 'GATEWAY CLEARANCE DENIED'}
                       </h3>
                     </div>
                   </div>
@@ -1516,6 +1621,27 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
                     NOT PERMITTED ✕
                   </span>
                 </div>
+
+                {/* Ticket Details if ticket was identified */}
+                {resultDetails?.ticket && (
+                  <div className="p-3 bg-[#42090e] rounded-xl border border-rose-600/60 font-mono text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-rose-300 uppercase font-sans font-bold">Identified Movement Ticket:</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-rose-900 text-rose-200 font-bold border border-rose-500">
+                        STATUS: {resultDetails.ticket.status}
+                      </span>
+                    </div>
+                    <p className="text-sm font-bold text-white">Ticket #{resultDetails.ticket.ticket_no}</p>
+                    <p className="text-[11px] text-rose-200">
+                      Requestor: <strong>{resultDetails.ticket.requestor_name}</strong> | Engineer: <strong>{resultDetails.ticket.engineer_name} ({resultDetails.ticket.engineer_emp_id})</strong>
+                    </p>
+                    {resultDetails.ticket.rejection_reason && (
+                      <p className="text-[11px] text-amber-300 pt-1 border-t border-rose-800">
+                        Manager Rejection Reason: <strong>{resultDetails.ticket.rejection_reason}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Serial Comparison Mismatch Table */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-[#42090e] p-4 rounded-xl border border-rose-500 font-mono text-xs">
@@ -1540,8 +1666,8 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
                 </div>
 
                 <div className="p-4 bg-rose-950/80 rounded-xl border border-rose-600 text-xs font-mono font-bold text-rose-100 space-y-1">
-                  <p>🚫 RED LIGHT: CPU serial number does not match the IT Room clearance record.</p>
-                  <p>Security guard must halt asset movement immediately and log incident.</p>
+                  <p>🚫 RED LIGHT: CPU serial number does not have approved IT Room clearance authorization.</p>
+                  <p>Security guard must halt asset movement immediately and record incident.</p>
                 </div>
 
                 <p className="text-xs font-bold text-rose-100 bg-rose-900/90 p-3 rounded-xl border border-rose-600">

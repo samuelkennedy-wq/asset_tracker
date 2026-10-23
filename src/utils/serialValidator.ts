@@ -62,17 +62,18 @@ export function validateAndCleanSerial(input: string): SerialValidationResult {
     };
   }
 
-  // Rule 3: Pure Serial Number validation (Alphanumeric, dashes, underscores)
-  // Must not contain invalid URL symbols or slashes
-  if (/[\/\?#\\:]/.test(raw)) {
+  // Rule 3: Pure Serial Number validation (Alphanumeric, dashes, underscores, and S/N prefix)
+  // Check for invalid URL symbols (?, #, :, //, http)
+  if (/[\?#\\:]|\/\//.test(raw)) {
     return {
       isValid: false,
       cleanSerial: '',
-      error: `INVALID FORMAT: Scan contains illegal characters or slashes ("${raw}"). Only clean CPU Serial Numbers are permitted.`,
+      error: `INVALID FORMAT: Scan contains illegal characters or URL symbols ("${raw}"). Only clean CPU Serial Numbers are permitted.`,
     };
   }
 
-  const cleanVal = raw.replace(/[^A-Za-z0-9\-_]/g, '').toUpperCase();
+  // Allow standard S/N- format or strip slash safely
+  const cleanVal = raw.replace(/[^A-Za-z0-9\-_\/]/g, '').toUpperCase();
   if (!cleanVal || cleanVal.length < 2) {
     return {
       isValid: false,

@@ -194,8 +194,8 @@
       "barcode": "CPU90003",
       "model": "Lenovo ThinkCentre M90q",
       "serial_number": "S/N-L34D9W",
-      "current_location": "FLOOR_3",
-      "status": "DEPLOYED"
+      "current_location": "TRANSIT_GATE",
+      "status": "AVAILABLE"
     },
     {
       "id": 4,
@@ -265,10 +265,10 @@
       "status": "REJECTED",
       "created_at": "2026-09-15T12:01:03.570Z",
       "approved_at": "2026-10-23T10:08:19.262Z",
-      "gateway_clearance_status": "CLEARED",
+      "gateway_clearance_status": "BLOCKED",
       "gateway_cleared_timestamp": "2026-09-15T16:29:39.204Z",
-      "gateway_scanned_by": "Gate Officer",
-      "gateway_blocked_reason": "",
+      "gateway_scanned_by": "Gate Officer Security-01",
+      "gateway_blocked_reason": "RED LIGHT — MOVEMENT REJECTED! CPU Serial 'S/N-H92G4K' belongs to Movement Ticket IT012346, which was REJECTED by IT Manager. Reason: Missing or Invalid Hardware Serial Number. CPU NOT ALLOWED THROUGH GATEWAY!",
       "comments": [
         {
           "id": "comm_1792672423805_2kcfu",
@@ -310,7 +310,9 @@
       "approval_status": "REJECTED",
       "rejection_reason": "Missing or Invalid Hardware Serial Number",
       "approved_by_name": "Dominic Manoharan",
-      "approved_by_id": "010128793"
+      "approved_by_id": "010128793",
+      "gateway_blocked_timestamp": "2026-10-23T11:08:49.047Z",
+      "scanned_physical_serial": "S/N-H92G4K"
     },
     {
       "id": 2,
@@ -330,7 +332,13 @@
       "approved_by_name": "D. Manoharan",
       "approved_by_id": "010128793",
       "created_at": "2026-09-15T11:01:03.570Z",
-      "approved_at": "2026-09-15T11:02:43.570Z"
+      "approved_at": "2026-09-15T11:02:43.570Z",
+      "gateway_clearance_status": "BLOCKED",
+      "gateway_cleared_timestamp": "2026-10-23T11:08:34.336Z",
+      "gateway_scanned_by": "Gate Officer Security-01",
+      "gateway_blocked_reason": "SECURITY ALERT: SERIAL NUMBERS MISMATCH! Physical scanned CPU S/N 'S/N-WRONG-9999' is not listed under Ticket IT012347. Registered serial(s): 'S/N-L34D9W'. CPU NOT ALLOWED THROUGH GATE!",
+      "gateway_blocked_timestamp": "2026-10-23T11:09:05.728Z",
+      "scanned_physical_serial": "S/N-WRONG-9999"
     },
     {
       "id": 3,
@@ -536,6 +544,66 @@
       "is_valid": 1,
       "reason": "INBOUND ENTRY PERMITTED — GREEN LIGHT ✓ Approved Ticket TKT-0007 authorizes movement for serial 'S/N-78F8A2'! CPU successfully received inside FLOOR_2. Movement Identification: Ticket [TKT-0007].",
       "clearance_id": "TKT-0007"
+    },
+    {
+      "id": 9,
+      "barcode": "CPU90003",
+      "serial_number": "S/N-L34D9W",
+      "ticket_id": 2,
+      "ticket_no": "IT012347",
+      "scanned_by": "Gate Officer Security-01",
+      "from_location": "IT_ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-10-23T11:08:34.337Z",
+      "is_valid": 1,
+      "reason": "OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Approved Ticket IT012347 authorizes movement for CPU Serial 'S/N-L34D9W'! Raised by Alice Chen for destination FLOOR_3 (Port: N/A). Movement Identification: Ticket [IT012347] [Engineer: T Murugesh (Emp ID: 010125496)].",
+      "clearance_id": "IT012347",
+      "went_in_ticket_no": "IT012347",
+      "went_in_date": "2026-09-15T11:02:43.570Z",
+      "went_in_floor": "FLOOR_3"
+    },
+    {
+      "id": 10,
+      "barcode": "CPU90002",
+      "serial_number": "S/N-H92G4K",
+      "ticket_id": 1,
+      "ticket_no": "IT012346",
+      "scanned_by": "Gate Officer Security-01",
+      "from_location": "IT_ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-10-23T11:08:49.047Z",
+      "is_valid": 0,
+      "reason": "RED LIGHT — MOVEMENT REJECTED! CPU Serial 'S/N-H92G4K' belongs to Movement Ticket IT012346, which was REJECTED by IT Manager. Reason: Missing or Invalid Hardware Serial Number. CPU NOT ALLOWED THROUGH GATEWAY!",
+      "clearance_id": null,
+      "went_in_ticket_no": "IT012346",
+      "went_in_date": "2026-10-23T10:08:19.262Z",
+      "went_in_floor": "FLOOR_3"
+    },
+    {
+      "id": 11,
+      "barcode": "S/N-UNKNOWN-999",
+      "serial_number": "S/N-UNKNOWN-999",
+      "scanned_by": "Gate Officer Security-01",
+      "from_location": "IT_ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-10-23T11:08:58.221Z",
+      "is_valid": 0,
+      "reason": "DENIED — NO MOVEMENT TICKET FOUND! CPU Serial Number 'S/N-UNKNOWN-999' does not belong to any raised movement ticket in the database. CPU NOT ALLOWED THROUGH GATE!",
+      "clearance_id": null
+    },
+    {
+      "id": 12,
+      "barcode": "IT012347",
+      "serial_number": "S/N-WRONG-9999",
+      "ticket_id": 2,
+      "ticket_no": "IT012347",
+      "scanned_by": "Gate Officer Security-01",
+      "from_location": "IT_ROOM",
+      "to_location": "GATE_TRANSIT",
+      "scan_timestamp": "2026-10-23T11:09:05.729Z",
+      "is_valid": 0,
+      "reason": "SECURITY ALERT: SERIAL NUMBERS MISMATCH! Physical scanned CPU S/N 'S/N-WRONG-9999' is not listed under Ticket IT012347. Registered serial(s): 'S/N-L34D9W'. CPU NOT ALLOWED THROUGH GATE!",
+      "clearance_id": "IT012347"
     }
   ],
   "email_queue": [
@@ -855,6 +923,42 @@
       "timestamp": "2026-10-23T10:26:58.202Z",
       "level": "SUCCESS",
       "message": "SSO Token Validated for dominic.manoharan@247.ai via azure_ad -> Mapped Role: IT Approval Manager (SG-247AI-IT-APPROVAL-MANAGERS)"
+    },
+    {
+      "id": 52,
+      "timestamp": "2026-10-23T10:52:50.680Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 53,
+      "timestamp": "2026-10-23T11:08:30.295Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 54,
+      "timestamp": "2026-10-23T11:08:34.337Z",
+      "level": "SUCCESS",
+      "message": "Gate Scan [OUTBOUND_EXIT - CLEARED]: S/N-L34D9W (Physical: N/A) by Gate Officer Security-01. OUTBOUND EXIT PERMITTED — GREEN LIGHT ✓ Approved Ticket IT012347 authorizes movement for CPU Serial 'S/N-L34D9W'! Raised by Alice Chen for destination FLOOR_3 (Port: N/A). Movement Identification: Ticket [IT012347] [Engineer: T Murugesh (Emp ID: 010125496)]."
+    },
+    {
+      "id": 55,
+      "timestamp": "2026-10-23T11:08:49.047Z",
+      "level": "ERROR",
+      "message": "Gate Scan [OUTBOUND_EXIT - DENIED]: S/N-H92G4K (Physical: N/A) by Gate Officer Security-01. RED LIGHT — MOVEMENT REJECTED! CPU Serial 'S/N-H92G4K' belongs to Movement Ticket IT012346, which was REJECTED by IT Manager. Reason: Missing or Invalid Hardware Serial Number. CPU NOT ALLOWED THROUGH GATEWAY!"
+    },
+    {
+      "id": 56,
+      "timestamp": "2026-10-23T11:08:58.221Z",
+      "level": "ERROR",
+      "message": "Gate Scan [OUTBOUND_EXIT - DENIED]: S/N-UNKNOWN-999 (Physical: N/A) by Gate Officer Security-01. DENIED — NO MOVEMENT TICKET FOUND! CPU Serial Number 'S/N-UNKNOWN-999' does not belong to any raised movement ticket in the database. CPU NOT ALLOWED THROUGH GATE!"
+    },
+    {
+      "id": 57,
+      "timestamp": "2026-10-23T11:09:05.729Z",
+      "level": "ERROR",
+      "message": "Gate Scan [OUTBOUND_EXIT - DENIED]: IT012347 (Physical: S/N-WRONG-9999) by Gate Officer Security-01. SECURITY ALERT: SERIAL NUMBERS MISMATCH! Physical scanned CPU S/N 'S/N-WRONG-9999' is not listed under Ticket IT012347. Registered serial(s): 'S/N-L34D9W'. CPU NOT ALLOWED THROUGH GATE!"
     }
   ],
   "is_internet_online": true

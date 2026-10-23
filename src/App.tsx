@@ -46,13 +46,12 @@ import { Asset, MovementTicket, EmailQueue, SystemLog, DashboardStats, GateScanL
 
 import UserRolesManager from './components/UserRolesManager';
 import LiveAssetJourneyTracker from './components/LiveAssetJourneyTracker';
-import SsoConfigView from './components/SsoConfigView';
 
 type PrimaryModule = 'module_a_engineer' | 'module_b_manager' | 'module_c_security';
 type ModuleASubTab = 'tickets' | 'approvals' | 'gate_security' | 'floor_map' | 'asset_directory' | 'live_tracker';
 type ModuleBSubTab = 'approvals' | 'master_export' | 'roles_management' | 'live_tracker';
 type ModuleCSubTab = 'gate_scanner' | 'mail_system' | 'live_tracker';
-type AdminSubTab = 'email' | 'terminal' | 'benchmark' | 'sso_config';
+type AdminSubTab = 'email' | 'terminal' | 'benchmark';
 
 export default function App() {
   // Authentication & Session state
@@ -834,21 +833,6 @@ export default function App() {
                           <Gauge className="w-4 h-4" />
                           <span>100-Scan Bench Suite</span>
                         </button>
-
-                        <button
-                          onClick={() => setAdminSubTab('sso_config')}
-                          className={`px-4 py-2.5 font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                            adminSubTab === 'sso_config'
-                              ? 'border-emerald-400 text-emerald-300 bg-slate-900/50'
-                              : 'border-transparent text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                          <span>Active Directory SSO Setup</span>
-                          <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono font-bold">
-                            Add-on
-                          </span>
-                        </button>
                       </div>
 
                       {adminSubTab === 'email' && (
@@ -869,8 +853,6 @@ export default function App() {
                       )}
 
                       {adminSubTab === 'benchmark' && <PerformanceBench />}
-
-                      {adminSubTab === 'sso_config' && <SsoConfigView />}
                     </div>
                   )}
                 </>
