@@ -34,7 +34,8 @@ export interface MovementTicket {
   port_number?: string;
   reason?: string;
   requested_by?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'OPEN' | 'PENDING' | 'WAITING_FOR_REPORTER' | 'RESOLVED' | 'REOPENED' | 'APPROVED' | 'REJECTED' | string;
+  approval_status?: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   created_at: string;
   approved_at?: string;
   clearance_id?: string;
@@ -58,6 +59,7 @@ export interface MovementTicket {
   gateway_cleared_timestamp?: string;
   gateway_scanned_by?: string;
   scanned_physical_serial?: string;
+  comments?: any[];
 }
 
 export interface ScanLog {

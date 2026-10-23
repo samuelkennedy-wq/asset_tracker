@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Shield, 
+  ShieldCheck,
   Database, 
   ScanBarcode, 
   Plus, 
@@ -45,12 +46,13 @@ import { Asset, MovementTicket, EmailQueue, SystemLog, DashboardStats, GateScanL
 
 import UserRolesManager from './components/UserRolesManager';
 import LiveAssetJourneyTracker from './components/LiveAssetJourneyTracker';
+import SsoConfigView from './components/SsoConfigView';
 
 type PrimaryModule = 'module_a_engineer' | 'module_b_manager' | 'module_c_security';
 type ModuleASubTab = 'tickets' | 'approvals' | 'gate_security' | 'floor_map' | 'asset_directory' | 'live_tracker';
 type ModuleBSubTab = 'approvals' | 'master_export' | 'roles_management' | 'live_tracker';
 type ModuleCSubTab = 'gate_scanner' | 'mail_system' | 'live_tracker';
-type AdminSubTab = 'email' | 'terminal' | 'benchmark';
+type AdminSubTab = 'email' | 'terminal' | 'benchmark' | 'sso_config';
 
 export default function App() {
   // Authentication & Session state
@@ -295,15 +297,21 @@ export default function App() {
               <span>Live Asset Tracking</span>
             </button>
             <button
-                onClick={() => setScreenMode('mobile')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                onClick={() => setScreenMode(screenMode === 'mobile' ? 'web' : 'mobile')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   screenMode === 'mobile'
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-blue-600 text-white shadow-xs ring-1 ring-blue-500'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
+                title="Toggle Mobile Phone Mode & PWA Access View"
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 <span>Mobile</span>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase ${
+                  screenMode === 'mobile' ? 'bg-blue-800 text-white' : 'bg-slate-200 text-slate-700'
+                }`}>
+                  PWA
+                </span>
               </button>
             </div>
 
@@ -324,7 +332,34 @@ export default function App() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-5" id="main-content">
+      <main
+        className={`flex-1 w-full mx-auto py-5 flex flex-col gap-5 transition-all duration-300 ${
+          screenMode === 'mobile'
+            ? 'max-w-md px-3 bg-white border border-slate-300 shadow-2xl rounded-3xl my-3'
+            : 'max-w-7xl px-4 sm:px-6 lg:px-8'
+        }`}
+        id="main-content"
+      >
+        {screenMode === 'mobile' && (
+          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-3 rounded-2xl shadow-sm text-xs flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center space-x-2">
+              <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div>
+                <div className="font-bold">Mobile Phone View Active</div>
+                <div className="text-[10px] text-blue-200">
+                  Optimized for Android / iOS mobile phone browsers & PWA install
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setScreenMode('web')}
+              className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-[10px] font-bold transition-all shrink-0 cursor-pointer"
+            >
+              Desktop View
+            </button>
+          </div>
+        )}
 
         {/* WORKSPACE MODULE SELECTOR - ROLE BASED SELECTION */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm" id="workspace-module-selector">
@@ -799,6 +834,21 @@ export default function App() {
                           <Gauge className="w-4 h-4" />
                           <span>100-Scan Bench Suite</span>
                         </button>
+
+                        <button
+                          onClick={() => setAdminSubTab('sso_config')}
+                          className={`px-4 py-2.5 font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                            adminSubTab === 'sso_config'
+                              ? 'border-emerald-400 text-emerald-300 bg-slate-900/50'
+                              : 'border-transparent text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <span>Active Directory SSO Setup</span>
+                          <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono font-bold">
+                            Add-on
+                          </span>
+                        </button>
                       </div>
 
                       {adminSubTab === 'email' && (
@@ -819,6 +869,8 @@ export default function App() {
                       )}
 
                       {adminSubTab === 'benchmark' && <PerformanceBench />}
+
+                      {adminSubTab === 'sso_config' && <SsoConfigView />}
                     </div>
                   )}
                 </>

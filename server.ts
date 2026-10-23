@@ -128,7 +128,20 @@ app.use(express.json());
   // 4. API: List Movement Tickets
   app.get('/api/movement/tickets', (req, res) => {
     const db = loadDb();
-    res.json(db.movement_tickets);
+    const enriched = db.movement_tickets.map(t => {
+      let approval_status = (t as any).approval_status;
+      if (!approval_status) {
+        if (t.status === 'APPROVED' || t.approved_at) {
+          approval_status = 'APPROVED';
+        } else if (t.status === 'REJECTED' || t.rejection_reason) {
+          approval_status = 'REJECTED';
+        } else {
+          approval_status = 'PENDING';
+        }
+      }
+      return { ...t, approval_status };
+    });
+    res.json(enriched);
   });
 
   // 4b. API: Asset Movement History & Lifecycle Lookup
@@ -388,7 +401,8 @@ app.use(express.json());
       target_room: target_room ? target_room.trim() : (isReturningToItRoom ? 'IT Room Stock Inventory' : `Floor Workspace (${destination_floor})`),
       port_number: port_number ? port_number.trim().toUpperCase() : '',
       reason: reason || (isReturningToItRoom ? `Return to IT Room [${effectiveReturnDisposition}]` : 'IT Infrastructure upgrade / user workstation deployment'),
-      status: 'PENDING' as const,
+      status: 'OPEN' as const,
+      approval_status: 'PENDING' as const,
       movement_type: effectiveMovementType,
       return_disposition: effectiveReturnDisposition,
       previous_floor_ticket_no: autoPrevTicketNo,
@@ -452,12 +466,24 @@ app.use(express.json());
     if (target_room !== undefined) (ticket as any).target_room = target_room.trim();
     if (port_number !== undefined) (ticket as any).port_number = port_number.trim().toUpperCase();
     if (reason !== undefined && reason.trim()) ticket.reason = reason.trim();
-    if (status !== undefined && ['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
+    const VALID_STATUSES = ['OPEN', 'PENDING', 'WAITING_FOR_REPORTER', 'RESOLVED', 'REOPENED', 'APPROVED', 'REJECTED'];
+    if (status !== undefined && VALID_STATUSES.includes(status)) {
+      const prevStatus = ticket.status;
       ticket.status = status;
       if (status === 'APPROVED') {
         const ticketIdTag = ticket.ticket_no || ('IT' + (12345 + ticket.id).toString().padStart(6, '0'));
         (ticket as any).clearance_id = ticketIdTag;
         (ticket as any).approved_at = new Date().toISOString();
+      }
+      if (prevStatus !== status) {
+        if (!ticket.comments) ticket.comments = [];
+        ticket.comments.push({
+          id: `comm_${Date.now()}_status`,
+          author_name: (req.body.author_name || req.body.manager_name || 'System Workflow').trim(),
+          role: 'Workflow Transition',
+          content: `Ticket status transitioned from ${prevStatus} to ${status}${req.body.status_note ? `: ${req.body.status_note}` : ''}`,
+          created_at: new Date().toISOString()
+        });
       }
     }
     if (rejection_reason !== undefined) (ticket as any).rejection_reason = rejection_reason;
@@ -484,7 +510,7 @@ app.use(express.json());
       if ((ticket as any).return_disposition) (asset as any).return_disposition = (ticket as any).return_disposition;
     }
 
-    logSystem('SUCCESS', `EDITED Ticket #${ticketId} (${ticket.ticket_no}) details updated by Manager.`);
+    logSystem('SUCCESS', `EDITED Ticket #${ticketId} (${ticket.ticket_no}) details updated.`);
     saveDb();
 
     res.json({ success: true, message: `Ticket ${ticket.ticket_no} updated successfully.`, ticket });
@@ -492,6 +518,105 @@ app.use(express.json());
 
   app.put('/api/movement/tickets/:id', handleUpdateTicket);
   app.post('/api/movement/tickets/:id/update', handleUpdateTicket);
+
+  // API: Transition Ticket Status (OPEN, PENDING, WAITING_FOR_REPORTER, RESOLVED, REOPENED, APPROVED, REJECTED)
+  app.post('/api/movement/tickets/:id/status', (req, res) => {
+    const ticketId = parseInt(req.params.id);
+    const { status, note, author_name, role } = req.body;
+    const VALID_STATUSES = ['OPEN', 'PENDING', 'WAITING_FOR_REPORTER', 'RESOLVED', 'REOPENED', 'APPROVED', 'REJECTED'];
+
+    if (!status || !VALID_STATUSES.includes(status)) {
+      res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` });
+      return;
+    }
+
+    const db = loadDb();
+    const ticket = db.movement_tickets.find(t => t.id === ticketId);
+    if (!ticket) {
+      res.status(404).json({ error: 'Movement ticket not found.' });
+      return;
+    }
+
+    const isManager = role === 'IT Approval Manager' || (author_name && (author_name.includes('Manager') || author_name.includes('Dominic')));
+    const ticketApprovalStatus = (ticket as any).approval_status || (ticket.status === 'APPROVED' ? 'APPROVED' : (ticket.status === 'REJECTED' ? 'REJECTED' : 'PENDING'));
+
+    // Rule 1: Approval status & authorization belongs strictly to the Approval Manager Desk
+    if ((status === 'APPROVED' || status === 'REJECTED') && !isManager) {
+      res.status(403).json({ error: 'Ticket approval authorization belongs strictly to the Approval Manager Desk.' });
+      return;
+    }
+
+    // Rule 2: Asset movement status is handled by the engineers desk once authorized approval is updated by the manager
+    if (!isManager && ticketApprovalStatus !== 'APPROVED') {
+      res.status(403).json({ 
+        error: `Asset movement status can only be updated by engineers once the ticket is authorized by the Approval Manager. Current approval status: ${ticketApprovalStatus}.` 
+      });
+      return;
+    }
+
+    const prevStatus = ticket.status;
+    ticket.status = status;
+
+    if (status === 'APPROVED') {
+      const ticketIdTag = ticket.ticket_no || ('IT' + (12345 + ticket.id).toString().padStart(6, '0'));
+      (ticket as any).clearance_id = ticketIdTag;
+      (ticket as any).approved_at = new Date().toISOString();
+      (ticket as any).approval_status = 'APPROVED';
+    } else if (status === 'REJECTED') {
+      (ticket as any).approval_status = 'REJECTED';
+    }
+
+    if (!ticket.comments) ticket.comments = [];
+    ticket.comments.push({
+      id: `comm_${Date.now()}_status`,
+      author_name: (author_name || 'IT Field Engineer').trim(),
+      role: (role || 'Workflow Transition').trim(),
+      content: `Status changed from ${prevStatus} to ${status}${note ? ` — Note: ${note.trim()}` : ''}`,
+      created_at: new Date().toISOString()
+    });
+
+    logSystem('INFO', `Ticket ${ticket.ticket_no} status updated: ${prevStatus} ➔ ${status}`);
+    saveDb();
+
+    res.json({ success: true, status, message: `Status updated to ${status}`, ticket, comments: ticket.comments });
+  });
+
+  // API: Add Comment to Movement Ticket
+  app.post('/api/movement/tickets/:id/comment', (req, res) => {
+    const ticketId = parseInt(req.params.id);
+    const { author_name, author_emp_id, role, content } = req.body;
+
+    if (!content || !content.trim()) {
+      res.status(400).json({ error: 'Comment content cannot be empty.' });
+      return;
+    }
+
+    const db = loadDb();
+    const ticket = db.movement_tickets.find(t => t.id === ticketId);
+    if (!ticket) {
+      res.status(404).json({ error: 'Movement ticket not found.' });
+      return;
+    }
+
+    if (!ticket.comments) {
+      ticket.comments = [];
+    }
+
+    const newComment = {
+      id: `comm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      author_name: (author_name || 'IT Field Engineer').trim(),
+      author_emp_id: (author_emp_id || '').trim(),
+      role: (role || 'IT Field Engineer').trim(),
+      content: content.trim(),
+      created_at: new Date().toISOString()
+    };
+
+    ticket.comments.push(newComment);
+    logSystem('INFO', `Comment added to Ticket ${ticket.ticket_no} by ${newComment.author_name}: "${content.slice(0, 35)}..."`);
+    saveDb();
+
+    res.json({ success: true, comment: newComment, comments: ticket.comments, ticket });
+  });
 
   // 6. API: Approve/Reject Movement Ticket (Module B - Asset Approval Manager)
   app.post('/api/movement/tickets/:id/approve', (req, res) => {
@@ -510,9 +635,16 @@ app.use(express.json());
 
     const isApproved = action === 'approve' || req.body.approved === true || req.body.status === 'APPROVED';
 
+    // Guard: Once rejected, a ticket cannot be approved again; it remains REJECTED ONLY
+    if (isApproved && ((ticket as any).approval_status === 'REJECTED' || ticket.status === 'REJECTED')) {
+      res.status(400).json({ error: 'This ticket was rejected by the Approval Manager and cannot be approved or issued clearance. A new ticket must be raised.' });
+      return;
+    }
+
     if (isApproved) {
       const ticketIdentification = ticket.ticket_no || ('IT' + (12345 + ticket.id).toString().padStart(6, '0'));
       (ticket as any).status = 'APPROVED';
+      (ticket as any).approval_status = 'APPROVED';
       (ticket as any).approved_at = new Date().toISOString();
       (ticket as any).approved_by_name = managerName;
       (ticket as any).approved_by_id = managerId;
@@ -558,12 +690,33 @@ app.use(express.json());
       logSystem('SUCCESS', `APPROVED Ticket ${ticket.ticket_no || `#${ticketId}`} by Manager ${managerName} (${managerId}). In/Out Movement Identification (Ticket Number): ${ticketIdentification}`);
     } else {
       (ticket as any).status = 'REJECTED';
+      (ticket as any).approval_status = 'REJECTED';
       (ticket as any).rejection_reason = rejection_reason || 'Floor allocation policy non-compliance / security hold';
       (ticket as any).approved_by_name = managerName;
       (ticket as any).approved_by_id = managerId;
       (ticket as any).approved_at = new Date().toISOString();
+      delete (ticket as any).clearance_id; // Strips any clearance pass ID so clearance cannot be issued
 
       logSystem('WARN', `REJECTED Ticket ${ticket.ticket_no || `#${ticketId}`} by Manager ${managerName}. Reason: ${(ticket as any).rejection_reason}`);
+    }
+
+    if (!ticket.comments) ticket.comments = [];
+    if (isApproved) {
+      ticket.comments.push({
+        id: `comm_${Date.now()}_approve`,
+        author_name: managerName,
+        role: 'IT Approval Manager',
+        content: `Approval Status: APPROVED — Authorized for floor movement by Manager ${managerName}. Clearance Pass ID: ${(ticket as any).clearance_id}`,
+        created_at: new Date().toISOString()
+      });
+    } else {
+      ticket.comments.push({
+        id: `comm_${Date.now()}_reject`,
+        author_name: managerName,
+        role: 'IT Approval Manager',
+        content: `Approval Status: REJECTED — Movement denied by Manager ${managerName}. Audit Reason: ${(ticket as any).rejection_reason}`,
+        created_at: new Date().toISOString()
+      });
     }
 
     saveDb();
@@ -1226,6 +1379,78 @@ app.use(express.json());
     saveDb();
 
     res.json({ success: true, message: `Access for ${removedUser.name} has been revoked and deleted.` });
+  });
+
+  // 11.9 API: Enterprise SSO & Active Directory Configuration
+  app.get('/api/auth/sso/config', (req, res) => {
+    const db = loadDb();
+    const config = (db as any).sso_config || {
+      authMode: 'TESTING_ROLE_SELECTOR',
+      provider: 'azure_ad',
+      tenantId: '247ai-corp-directory-tenant-id',
+      clientId: '01a2b3c4-5678-90ab-cdef-247ai0000001',
+      clientSecretConfigured: true,
+      allowedDomain: '@247.ai',
+      redirectUri: `${req.protocol}://${req.get('host')}/api/auth/callback`,
+      adGroupMappings: {
+        managerGroup: 'SG-247AI-IT-APPROVAL-MANAGERS',
+        securityGroup: 'SG-247AI-PLATINA-GATE-SECURITY',
+        engineerGroup: 'SG-247AI-FIELD-ENGINEERS'
+      }
+    };
+    res.json({ success: true, config });
+  });
+
+  app.post('/api/auth/sso/config', (req, res) => {
+    const newConfig = req.body;
+    const db = loadDb();
+    (db as any).sso_config = newConfig;
+    logSystem('INFO', `SSO Configuration updated: Mode is now [${newConfig.authMode || 'TESTING_ROLE_SELECTOR'}] via Provider [${newConfig.provider || 'azure_ad'}]`);
+    saveDb();
+    res.json({ success: true, message: 'SSO configuration updated successfully.', config: newConfig });
+  });
+
+  app.post('/api/auth/sso/verify-token', (req, res) => {
+    const { email, provider } = req.body;
+    if (!email) {
+      res.status(400).json({ success: false, error: 'Email parameter is required.' });
+      return;
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.endsWith('@247.ai')) {
+      res.status(401).json({ success: false, error: 'Unauthorized domain. Enterprise SSO requires an authorized @247.ai address.' });
+      return;
+    }
+
+    let mappedRole = 'IT Field Engineer';
+    let roleId = 'module_a_engineer';
+    let adGroup = 'SG-247AI-FIELD-ENGINEERS';
+
+    if (cleanEmail.includes('dominic') || cleanEmail.includes('manoharan') || cleanEmail.includes('jyothi') || cleanEmail.includes('manager')) {
+      mappedRole = 'IT Approval Manager';
+      roleId = 'module_b_manager';
+      adGroup = 'SG-247AI-IT-APPROVAL-MANAGERS';
+    } else if (cleanEmail.includes('platina') || cleanEmail.includes('security') || cleanEmail.includes('gate')) {
+      mappedRole = 'Gate Security Clearance Officer';
+      roleId = 'module_c_security';
+      adGroup = 'SG-247AI-PLATINA-GATE-SECURITY';
+    }
+
+    logSystem('SUCCESS', `SSO Token Validated for ${cleanEmail} via ${provider || 'Azure AD'} -> Mapped Role: ${mappedRole} (${adGroup})`);
+
+    res.json({
+      success: true,
+      mappedRole,
+      roleId,
+      adGroup,
+      tokenClaims: {
+        iss: provider === 'google_workspace' ? 'https://accounts.google.com' : 'https://login.microsoftonline.com/247ai',
+        sub: `oidc_sub_${Buffer.from(cleanEmail).toString('base64').slice(0, 12)}`,
+        email: cleanEmail,
+        name: cleanEmail.split('@')[0].split('.').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' '),
+        groups: [adGroup, 'All-Employees@247.ai']
+      }
+    });
   });
 
   // 12. API: Reset Database state

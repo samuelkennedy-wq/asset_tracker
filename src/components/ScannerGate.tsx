@@ -500,9 +500,6 @@ export default function ScannerGate({ assets = [], tickets = [], scanLogs = [], 
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-slate-900">Gate Clearance Security Terminal</h2>
-              <span className="text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-bold">
-                GATE SECURITY
-              </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Scan barcode tags or serial numbers for inbound/outbound CPU gate clearance verification.

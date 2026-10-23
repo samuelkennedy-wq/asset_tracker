@@ -11,18 +11,22 @@ interface ScannedCpuItem {
 
 interface HardwareBarcodeScannerProps {
   onSingleScan?: (serialOrBarcode: string) => void;
+  onScan?: (serialOrBarcode: string) => void;
   onBulkScanSubmit?: (scannedItems: ScannedCpuItem[]) => void;
   onClose?: () => void;
   title?: string;
   defaultMode?: 'SINGLE' | 'BULK';
+  targetMode?: string;
 }
 
 export default function HardwareBarcodeScanner({
   onSingleScan,
+  onScan,
   onBulkScanSubmit,
   onClose,
   title = 'Hardware USB/Bluetooth Barcode Scanner',
   defaultMode = 'SINGLE',
+  targetMode,
 }: HardwareBarcodeScannerProps) {
   const [scanMode, setScanMode] = useState<'SINGLE' | 'BULK'>(defaultMode);
   const [inputVal, setInputVal] = useState('');
@@ -76,8 +80,9 @@ export default function HardwareBarcodeScanner({
     setLastScannedText(valResult.wasExtractedFromUrl ? `${cleanSerial} (Extracted from URL)` : cleanSerial);
 
     if (scanMode === 'SINGLE') {
-      if (onSingleScan) {
-        onSingleScan(cleanSerial);
+      const scanHandler = onSingleScan || onScan;
+      if (scanHandler) {
+        scanHandler(cleanSerial);
       }
       setInputVal('');
     } else {

@@ -16,6 +16,15 @@ export interface Asset {
   came_back_date?: string;
 }
 
+export type TicketStatus = 
+  | 'OPEN' 
+  | 'PENDING' 
+  | 'WAITING_FOR_REPORTER' 
+  | 'RESOLVED' 
+  | 'REOPENED' 
+  | 'APPROVED' 
+  | 'REJECTED';
+
 export interface MovementTicket {
   id: number;
   ticket_no?: string; // e.g. TKT-0001
@@ -32,7 +41,8 @@ export interface MovementTicket {
   target_room?: string;
   port_number?: string; // Network switch / desk data port on destination floor (e.g. SW03-P18, Port 24)
   reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: TicketStatus;
+  approval_status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   created_at: string;
   clearance_id?: string; // Movement identification (strictly the Ticket Number e.g. TKT-0001, RET-2026-0001; no ticket tags created)
   approved_by_name?: string;
@@ -57,6 +67,16 @@ export interface MovementTicket {
   gateway_cleared_timestamp?: string;
   gateway_scanned_by?: string;
   scanned_physical_serial?: string;
+  comments?: TicketComment[];
+}
+
+export interface TicketComment {
+  id: string;
+  author_name: string;
+  author_emp_id?: string;
+  role: string;
+  content: string;
+  created_at: string;
 }
 
 export interface GateScanLog {
