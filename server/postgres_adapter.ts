@@ -176,6 +176,99 @@ async function ensurePostgresSchema(client: any): Promise<void> {
         employee_id VARCHAR(100)
       );
     `);
+
+    // Auto-migrate: Ensure all columns exist on pre-existing tables
+    const columnMigrations = [
+      // Assets table
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS barcode VARCHAR(255);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS model VARCHAR(255);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS serial_number VARCHAR(255);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS asset_type VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS current_location VARCHAR(255);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS status VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS last_floor_ticket_no VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS last_floor_entered_at VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS last_floor VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS last_port_number VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS return_disposition VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS came_back_ticket_no VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS came_back_date VARCHAR(100);`,
+      `ALTER TABLE assets ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`,
+
+      // Movement tickets table
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS ticket_no VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS requestor_name VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS requestor_emp_id VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS engineer_name VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS engineer_emp_id VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS asset_type VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS asset_serial_number VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS asset_barcode VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS origin_location VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS destination_floor VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS target_room VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS port_number VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS reason TEXT;`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS requested_by VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS status VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS approval_status VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS created_at VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS approved_at VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS clearance_id VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS approved_by_name VARCHAR(255);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS approved_by_id VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS rejection_reason TEXT;`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS movement_type VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS return_disposition VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS previous_floor_ticket_no VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS previous_floor_entered_at VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS previous_floor VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS previous_port_number VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS went_in_ticket_no VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS went_in_date VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS came_back_ticket_no VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS came_back_date VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS is_backtracked_return BOOLEAN DEFAULT FALSE;`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS gateway_clearance_status VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS gateway_blocked_reason TEXT;`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS gateway_blocked_timestamp VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS gateway_cleared_timestamp VARCHAR(100);`,
+      `ALTER TABLE movement_tickets ADD COLUMN IF NOT EXISTS gateway_scanned_by VARCHAR(255);`,
+
+      // Gate scan logs table
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS barcode VARCHAR(255);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS ticket_no VARCHAR(100);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS clearance_id VARCHAR(100);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS is_valid INTEGER DEFAULT 1;`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS message TEXT;`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS status VARCHAR(100);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS location VARCHAR(255);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS destination VARCHAR(255);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS scanned_by VARCHAR(255);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS timestamp VARCHAR(100);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS asset_serial_number VARCHAR(255);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS movement_type VARCHAR(100);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS came_back_ticket_no VARCHAR(100);`,
+      `ALTER TABLE gate_scan_logs ADD COLUMN IF NOT EXISTS went_in_ticket_no VARCHAR(100);`,
+
+      // Users table
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id VARCHAR(100);`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(255);`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id VARCHAR(100);`,
+
+      // Constraints: ensure barcode is unique, drop redundant serial_number unique constraint
+      `ALTER TABLE assets DROP CONSTRAINT IF EXISTS assets_serial_number_key;`
+    ];
+
+    for (const migration of columnMigrations) {
+      await client.query(migration).catch((e: any) => {
+        // Non-fatal if column or constraint exists
+        console.debug('Migration step notice:', e?.message);
+      });
+    }
   } catch (err) {
     console.warn('Notice when verifying schema in Postgres:', err);
   }

@@ -87,7 +87,7 @@ app.use(express.json());
     res.json(pgStatus);
   });
 
-  app.post('/api/db/sync', async (req, res) => {
+  app.all('/api/db/sync', async (req, res) => {
     const db = loadDb();
     const result = await syncDatabaseWithPostgres(db);
     res.json(result);

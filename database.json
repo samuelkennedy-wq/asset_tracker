@@ -241,9 +241,9 @@
     {
       "id": 9,
       "asset_type": "CPU",
-      "barcode": "CPU-SR100101928",
+      "barcode": "CPU-SR100101929",
       "model": "Enterprise Desktop CPU",
-      "serial_number": "S/N-SR100101928",
+      "serial_number": "S/N-SR100101929",
       "current_location": "IT ROOM",
       "status": "AVAILABLE"
     }
@@ -959,6 +959,18 @@
       "timestamp": "2026-10-23T11:09:05.729Z",
       "level": "ERROR",
       "message": "Gate Scan [OUTBOUND_EXIT - DENIED]: IT012347 (Physical: S/N-WRONG-9999) by Gate Officer Security-01. SECURITY ALERT: SERIAL NUMBERS MISMATCH! Physical scanned CPU S/N 'S/N-WRONG-9999' is not listed under Ticket IT012347. Registered serial(s): 'S/N-L34D9W'. CPU NOT ALLOWED THROUGH GATE!"
+    },
+    {
+      "id": 58,
+      "timestamp": "2026-10-27T17:54:08.348Z",
+      "level": "INFO",
+      "message": "Background email synchronization worker started (5s intervals)."
+    },
+    {
+      "id": 59,
+      "timestamp": "2026-10-27T17:54:08.402Z",
+      "level": "INFO",
+      "message": "Operating with atomic persistent file datastore (database.json)"
     }
   ],
   "is_internet_online": true
