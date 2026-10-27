@@ -243,6 +243,80 @@ export async function syncDatabaseWithPostgres(memoryDb: DatabaseState): Promise
   try {
     await client.query('BEGIN');
 
+    // 0. Pull any existing records from PostgreSQL into memoryDb
+    const existingPgAssets = await client.query('SELECT * FROM assets');
+    for (const row of existingPgAssets.rows) {
+      if (!row.barcode) continue;
+      const found = memoryDb.assets.find(a => a.barcode?.toUpperCase().trim() === row.barcode.toUpperCase().trim());
+      if (!found) {
+        memoryDb.assets.push({
+          id: row.id || (memoryDb.assets.length ? Math.max(...memoryDb.assets.map(a => a.id)) + 1 : 1),
+          barcode: row.barcode,
+          model: row.model || 'Standard Desktop CPU',
+          serial_number: row.serial_number || `S/N-${row.barcode}`,
+          asset_type: (row.asset_type as any) || 'CPU',
+          current_location: row.current_location || 'IT Stock Room',
+          status: (row.status as any) || 'AVAILABLE',
+          last_floor_ticket_no: row.last_floor_ticket_no || undefined,
+          last_floor_entered_at: row.last_floor_entered_at || undefined,
+          last_floor: row.last_floor || undefined,
+          last_port_number: row.last_port_number || undefined,
+          return_disposition: row.return_disposition || undefined,
+          came_back_ticket_no: row.came_back_ticket_no || undefined,
+          came_back_date: row.came_back_date || undefined
+        });
+      }
+    }
+
+    const existingPgTickets = await client.query('SELECT * FROM movement_tickets');
+    for (const row of existingPgTickets.rows) {
+      const ticketNo = row.ticket_no || `TKT-${row.id}`;
+      const found = memoryDb.movement_tickets.find(t => (t.ticket_no || `TKT-${t.id}`) === ticketNo);
+      if (!found) {
+        memoryDb.movement_tickets.push({
+          id: row.id || (memoryDb.movement_tickets.length ? Math.max(...memoryDb.movement_tickets.map(t => t.id)) + 1 : 1),
+          ticket_no: ticketNo,
+          requestor_name: row.requestor_name || '',
+          requestor_emp_id: row.requestor_emp_id || '',
+          engineer_name: row.engineer_name || '',
+          engineer_emp_id: row.engineer_emp_id || '',
+          asset_type: row.asset_type || 'CPU',
+          asset_serial_number: row.asset_serial_number || '',
+          asset_barcode: row.asset_barcode || '',
+          origin_location: row.origin_location || 'IT Stock Room',
+          destination_floor: row.destination_floor || '',
+          target_room: row.target_room || '',
+          port_number: row.port_number || '',
+          reason: row.reason || '',
+          requested_by: row.requested_by || '',
+          status: row.status || 'PENDING',
+          approval_status: row.approval_status || 'PENDING',
+          created_at: row.created_at || new Date().toISOString(),
+          approved_at: row.approved_at || undefined,
+          clearance_id: row.clearance_id || ticketNo,
+          approved_by_name: row.approved_by_name || undefined,
+          approved_by_id: row.approved_by_id || undefined,
+          rejection_reason: row.rejection_reason || undefined,
+          movement_type: row.movement_type || 'DEPLOY_TO_FLOOR',
+          return_disposition: row.return_disposition || undefined,
+          previous_floor_ticket_no: row.previous_floor_ticket_no || undefined,
+          previous_floor_entered_at: row.previous_floor_entered_at || undefined,
+          previous_floor: row.previous_floor || undefined,
+          previous_port_number: row.previous_port_number || undefined,
+          went_in_ticket_no: row.went_in_ticket_no || undefined,
+          went_in_date: row.went_in_date || undefined,
+          came_back_ticket_no: row.came_back_ticket_no || undefined,
+          came_back_date: row.came_back_date || undefined,
+          is_backtracked_return: !!row.is_backtracked_return,
+          gateway_clearance_status: row.gateway_clearance_status || undefined,
+          gateway_blocked_reason: row.gateway_blocked_reason || undefined,
+          gateway_blocked_timestamp: row.gateway_blocked_timestamp || undefined,
+          gateway_cleared_timestamp: row.gateway_cleared_timestamp || undefined,
+          gateway_scanned_by: row.gateway_scanned_by || undefined
+        });
+      }
+    }
+
     // 1. Sync Assets: Upsert from memoryDb to PostgreSQL
     for (const a of memoryDb.assets) {
       await client.query(`
@@ -327,13 +401,21 @@ export async function syncDatabaseWithPostgres(memoryDb: DatabaseState): Promise
           department = EXCLUDED.department,
           is_active = EXCLUDED.is_active;
       `, [
-        u.id, u.name, u.email || '', u.role_id || '', u.department || '', u.is_active ?? true, (u as any).employee_id || ''
+        u.id, u.name, u.email || '', u.role_id || '', u.department || '', u.active ?? true, (u as any).emp_id || (u as any).employee_id || ''
       ]);
     }
 
     await client.query('COMMIT');
     lastSyncTime = new Date().toISOString();
-    return { success: true, message: 'All assets, tickets, scan logs, and users synchronized with PostgreSQL.' };
+    return { 
+      success: true, 
+      message: 'Bidirectional sync complete: assets, tickets, and users merged with PostgreSQL.',
+      counts: {
+        total_assets: memoryDb.assets.length,
+        total_tickets: memoryDb.movement_tickets.length,
+        total_users: (memoryDb.users || []).length
+      }
+    };
   } catch (err: any) {
     await client.query('ROLLBACK');
     console.error('Error during PostgreSQL synchronization:', err);
