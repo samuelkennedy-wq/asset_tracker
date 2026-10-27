@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import type { DatabaseState, Asset, MovementTicket, ScanLog, User } from './database';
+import type { DatabaseState, Asset, MovementTicket, ScanLog, AppUser } from './database';
 
 export interface PostgresStatus {
   connected: boolean;
@@ -231,7 +231,7 @@ export async function getPostgresStatus(): Promise<PostgresStatus> {
  * If Postgres has records, it merges them into memoryDb.
  * Any missing records in Postgres are inserted.
  */
-export async function syncDatabaseWithPostgres(memoryDb: DatabaseState): Promise<{ success: boolean; message: string }> {
+export async function syncDatabaseWithPostgres(memoryDb: DatabaseState): Promise<{ success: boolean; message: string; counts?: any }> {
   if (!pool || !isConnected) {
     const ok = await initPostgres();
     if (!ok) {
