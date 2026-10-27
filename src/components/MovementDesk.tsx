@@ -1248,7 +1248,7 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
                   <th className="px-4 py-3">Asset Serial / Tag (Locked)</th>
                   <th className="px-4 py-3">Route Segment & Location</th>
                   <th className="px-4 py-3">Requestor & Engineer</th>
-                  <th className="px-4 py-3">Approval & Workflow Status</th>
+                  <th className="px-4 py-3">Approval Status</th>
                   <th className="px-4 py-3 text-right">Status Action & Comments</th>
                 </tr>
               </thead>
@@ -1333,22 +1333,17 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
                       </td>
                       <td className="px-4 py-3">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Appr:</span>
+                          <div>
                             {renderApprovalBadge(t)}
                           </div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Work:</span>
-                            {renderStatusBadge(t.status)}
-                          </div>
                           {(getApprovalStatus(t) === 'APPROVED' && (t.approved_by_name || t.approved_by || t.approved_by_id)) && (
-                            <div className="text-[9px] text-slate-500 font-sans">
+                            <div className="text-[10px] text-slate-500 font-sans">
                               By: {t.approved_by_name || t.approved_by || t.approved_by_id}
                             </div>
                           )}
                           {(getApprovalStatus(t) === 'REJECTED' && t.rejection_reason) && (
-                            <div className="text-[9px] text-rose-600 font-sans truncate max-w-[130px]" title={t.rejection_reason}>
-                              {t.rejection_reason}
+                            <div className="text-[10px] text-rose-600 font-sans truncate max-w-[140px]" title={t.rejection_reason}>
+                              Reason: {t.rejection_reason}
                             </div>
                           )}
                         </div>
@@ -1438,12 +1433,8 @@ export default function MovementDesk({ assets, tickets, onRefresh }: MovementDes
                     {activeCommentTicket.ticket_no || `#TKT-${activeCommentTicket.id}`}
                   </span>
                   <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Approval:</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Approval Status:</span>
                     {renderApprovalBadge(activeCommentTicket)}
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Workflow:</span>
-                    {renderStatusBadge(activeCommentTicket.status)}
                   </div>
                   <span className="text-[10px] font-mono font-bold px-2 py-1 rounded-xl bg-blue-50 text-blue-800 border border-blue-200">
                     {activeCommentTicket.movement_type === 'RETURN_TO_IT_ROOM' ? 'RETURN TO IT ROOM' : 'DEPLOY TO FLOOR'}

@@ -18,6 +18,14 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DATABASE_URL=postgresql://asset_admin:SecretAssetPass247!@247ai-postgres-db:5432/asset_tracker_db
+      - PGHOST=247ai-postgres-db
+      - PGPORT=5432
+      - PGUSER=asset_admin
+      - PGPASSWORD=SecretAssetPass247!
+      - PGDATABASE=asset_tracker_db
+    depends_on:
+      - postgres-db
     # Mount persistent volume so data and inventory survive container restarts/updates
     volumes:
       - ./database.json:/app/database.json
@@ -36,7 +44,25 @@ services:
       start_period: 10s
 
   # ----------------------------------------------------------------------------
-  # Service 2: Nginx SSL / HTTPS Reverse Proxy (Optional, if using in Docker)
+  # Service 2: PostgreSQL Enterprise Relational Database
+  # ----------------------------------------------------------------------------
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: 247ai-postgres-db
+    restart: always
+    environment:
+      - POSTGRES_USER=asset_admin
+      - POSTGRES_PASSWORD=SecretAssetPass247!
+      - POSTGRES_DB=asset_tracker_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - asset-network
+
+  # ----------------------------------------------------------------------------
+  # Service 3: Nginx SSL / HTTPS Reverse Proxy (Optional, if using in Docker)
   # ----------------------------------------------------------------------------
   nginx-proxy:
     image: nginx:alpine
@@ -52,6 +78,9 @@ services:
         condition: service_healthy
     networks:
       - asset-network
+
+volumes:
+  postgres-data:
 
 networks:
   asset-network:

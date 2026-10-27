@@ -23,6 +23,7 @@ import { createServer as createViteServer } from 'vite';
 import { loadDb, saveDb, resetDb, logSystem } from './server/database';
 import { executeScan } from './server/scanner_logic';
 import { queueEmail, startEmailSyncWorker } from './server/email_service';
+import { initPostgres, getPostgresStatus, syncDatabaseWithPostgres } from './server/postgres_adapter';
 
 async function startServer() {
   const app = express();
@@ -46,18 +47,50 @@ app.use(express.json());
   // Background workers init
   startEmailSyncWorker();
 
+  // Initialize PostgreSQL connection and run background sync if available
+  initPostgres().then(connected => {
+    if (connected) {
+      logSystem('INFO', 'Connected to PostgreSQL database (asset_tracker_db)');
+      syncDatabaseWithPostgres(loadDb()).catch(e => {
+        console.error('PostgreSQL initial sync error:', e);
+      });
+    } else {
+      logSystem('INFO', 'Operating with atomic persistent file datastore (database.json)');
+    }
+  }).catch(err => {
+    console.warn('PostgreSQL initialization notice:', err);
+  });
+
   // 1. API: System Status and Stats
-  app.get('/api/status', (req, res) => {
+  app.get('/api/status', async (req, res) => {
     const db = loadDb();
+    const pgStatus = await getPostgresStatus();
     const stats = {
       totalAssets: db.assets.length,
       pendingTickets: db.movement_tickets.filter(t => t.status === 'PENDING').length,
       validScansCount: db.scan_logs.filter(s => s.is_valid === 1).length,
       blockedScansCount: db.scan_logs.filter(s => s.is_valid === 0).length,
       queuedEmailsCount: db.email_queue.filter(e => e.status === 'PENDING').length,
-      is_internet_online: db.is_internet_online
+      is_internet_online: db.is_internet_online,
+      database: {
+        mode: pgStatus.connected ? 'POSTGRESQL' : 'ATOMIC_JSON_PERSISTENCE',
+        connected: pgStatus.connected,
+        postgres: pgStatus
+      }
     };
     res.json(stats);
+  });
+
+  // Diagnostic & Management APIs for PostgreSQL
+  app.get('/api/db/status', async (req, res) => {
+    const pgStatus = await getPostgresStatus();
+    res.json(pgStatus);
+  });
+
+  app.post('/api/db/sync', async (req, res) => {
+    const db = loadDb();
+    const result = await syncDatabaseWithPostgres(db);
+    res.json(result);
   });
 
   // 2. API: List Assets

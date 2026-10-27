@@ -537,7 +537,7 @@ export default function ApprovalManagerDesk({
                 <th className="px-4 py-3">Movement Route</th>
                 <th className="px-4 py-3">Target Bay / Port</th>
                 <th className="px-4 py-3">Requestor & Engineer</th>
-                <th className="px-4 py-3">Approval & Workflow Status</th>
+                <th className="px-4 py-3">Approval Status</th>
                 <th className="px-4 py-3 text-right">Status Action & Review</th>
               </tr>
             </thead>
@@ -611,14 +611,19 @@ export default function ApprovalManagerDesk({
                           </span>
                         ) : (
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Appr:</span>
+                            <div>
                               {renderApprovalBadge(t)}
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Work:</span>
-                              {renderStatusBadge(t.status)}
-                            </div>
+                            {(getApprovalStatus(t) === 'APPROVED' && (t.approved_by_name || t.approved_by || t.approved_by_id)) && (
+                              <div className="text-[10px] text-slate-500 font-sans">
+                                By: {t.approved_by_name || t.approved_by || t.approved_by_id}
+                              </div>
+                            )}
+                            {(getApprovalStatus(t) === 'REJECTED' && t.rejection_reason) && (
+                              <div className="text-[10px] text-rose-600 font-sans truncate max-w-[140px]" title={t.rejection_reason}>
+                                Reason: {t.rejection_reason}
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>
@@ -693,12 +698,8 @@ export default function ApprovalManagerDesk({
                         {activeTicket.ticket_no || `#TKT-${activeTicket.id}`}
                       </span>
                       <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Approval:</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Approval Status:</span>
                         {renderApprovalBadge(activeTicket)}
-                      </div>
-                      <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Workflow:</span>
-                        {renderStatusBadge(activeTicket.status)}
                       </div>
                     </div>
                     <h3 className="text-base font-extrabold text-slate-900 mt-1">
